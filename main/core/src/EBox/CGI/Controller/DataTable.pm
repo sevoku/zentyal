@@ -93,10 +93,13 @@ sub _auditLog
     my $row = $model->row($rowId);
     if (defined ($row)) {
         my $element = $row->hashElements()->{$elementId};
+
         my $type;
         if (defined ($element)) {
             $type = $element->type();
         }
+
+        EBox::debug("Element $element Type $type value $value oldValue $oldValue");
         if ($type and ($type eq 'boolean')) {
             $value = $value ? 1 : 0;
             $oldValue = ($oldValue ? 1 : 0) if ($event eq 'set');
@@ -196,16 +199,44 @@ sub editField
     my $row = $model->row($id);
     my $auditId = $self->_getAuditId($id);
 
+    EBox::debug('params ' . Dumper(\%params));
+
+#     # unroll union parameters
+    my @unrolledTableDesc =  map {
+        my $field = $_;
+        if ($field->can('subtype')) {
+            EBox::debug("unrolling: " . $field->fieldName());
+            ($field, $field->subtype())
+        } else {
+            ($field)
+        }
+
+    } @{$tableDesc };
+
+
+
     # Store old and new values before setting the row for audit log
     my %changedValues;
-    for my $field (@{ $tableDesc} ) {
+#    for my $field (@{ $tableDesc}) {
+    for my $field (@unrolledTableDesc) {
         my $fieldName = $field->fieldName();
-        if (not $field->isa('EBox::Types::Boolean')) {
+        EBox::debug("fieldName $fieldName");
+        if (not $field->isa('EBox::Types::Boolean') and not $field->isa('EBox::Types::Union')) {
+            EBox::debug("Skip $fieldName") unless defined $params{$fieldName};
             next unless defined $params{$fieldName};
         }
 
-        my $newValue = $params{$fieldName};
-        my $oldValue = $row->valueByName($fieldName);
+        my ($newValue, $oldValue);
+        if ($field->isa('EBox::Types::Union')) {
+            $newValue = $params{$fieldName . '_selected'};
+            $oldValue = $row->elementByName($fieldName)->selectedType();
+            EBox::debug("union field $fieldName new $newValue old $oldValue");
+        } else {
+            $newValue = $params{$fieldName};
+            $oldValue = $row->valueByName($fieldName);
+
+        }
+
 
         next if ($newValue eq $oldValue);
 
@@ -217,6 +248,9 @@ sub editField
     }
 
     $model->setRow($force, %params);
+
+    use Data::Dumper;
+    EBox::debug('changedValues ' . Dumper(\%changedValues));
 
     for my $fieldName (keys %changedValues) {
         my $value = $changedValues{$fieldName};
