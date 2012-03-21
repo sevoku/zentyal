@@ -233,10 +233,13 @@ sub editField
             EBox::debug("union field $fieldName new $newValue old $oldValue");
         } else {
             $newValue = $params{$fieldName};
-            $oldValue = $row->valueByName($fieldName);
+            if ($row->elementExists($fieldName)) {
+                $oldValue = $row->valueByName($fieldName);
+            } else {
+                $oldValue = undef;
+            }
 
         }
-
 
         next if ($newValue eq $oldValue);
 
