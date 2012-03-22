@@ -98,9 +98,9 @@ sub clone
 
 sub subtype
 {
-    my ($self) = @_;
-
-    my $selected = $self->selectedType();
+    my ($self, $selected) = @_;
+    $selected or
+        $selected = $self->selectedType();
 
     foreach my $type (@{$self->{'subtypes'}}) {
         if ($type->fieldName() eq $selected) {

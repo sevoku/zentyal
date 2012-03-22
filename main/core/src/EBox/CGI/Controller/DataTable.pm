@@ -202,63 +202,83 @@ sub editField
     EBox::debug('params ' . Dumper(\%params));
 
 #     # unroll union parameters
-    my @unrolledTableDesc =  map {
-        my $field = $_;
-        if ($field->can('subtype')) {
-            EBox::debug("unrolling: " . $field->fieldName());
-            ($field, $field->subtype())
-        } else {
-            ($field)
-        }
-
-    } @{$tableDesc };
-
-
-
+ #   my @unrolledTableDesc =  map { @{ $_->unrollTypes() }  }  @{ $tableDesc };
+    my @unrolledTableDesc =   @{ $tableDesc };
     # Store old and new values before setting the row for audit log
     my %changedValues;
 #    for my $field (@{ $tableDesc}) {
     for my $field (@unrolledTableDesc) {
         my $fieldName = $field->fieldName();
         EBox::debug("fieldName $fieldName");
-        if (not $field->isa('EBox::Types::Boolean') and not $field->isa('EBox::Types::Union')) {
+#        if (not $field->isa('EBox::Types::Boolean') and not
+#        $field->isa('EBox::Types::Union')) {
+        if (not $field->isa('EBox::Types::Boolean')) {
             EBox::debug("Skip $fieldName") unless defined $params{$fieldName};
-            next unless defined $params{$fieldName};
+            # some elements with multiple fields had the main field empty so
+            # we should check all this field to avoid skipping them
+            foreach my $fn ($field->fields()) {
+                next unless defined $params{$fn};
+            }
+
         }
 
         my ($newValue, $oldValue);
         if ($field->isa('EBox::Types::Union')) {
-            $newValue = $params{$fieldName . '_selected'};
             $oldValue = $row->elementByName($fieldName)->selectedType();
             EBox::debug("union field $fieldName new $newValue old $oldValue");
+            # we will try to add to ur lsit the enabled subtype of the union
+            my $selectedSubtype = $params{$fieldName . '_selected'};
+            my $subtype = $field->subtype($selectedSubtype);
+            if ($subtype) {
+                # pushing a value in a foreach list is safe
+                EBox::debug("pushing subtype " . $subtype->fieldName());
+                push @unrolledTableDesc, $subtype;
+            }
         } else {
-            $newValue = $params{$fieldName};
+
+#            $newValue = $params{$fieldName};
             if ($row->elementExists($fieldName)) {
                 $oldValue = $row->valueByName($fieldName);
             } else {
                 $oldValue = undef;
             }
-
+            EBox::debug("field $fieldName new $newValue old $oldValue");
         }
 
-        next if ($newValue eq $oldValue);
+#        next if ($newValue eq $oldValue);
 
         $changedValues{$fieldName} = {
             id => $id ? "$auditId/$fieldName" : $fieldName,
-            new => $newValue,
+#            new => $newValue,
             old => $oldValue,
         };
     }
 
     $model->setRow($force, %params);
 
+    # get thwe new valeues
+    my $newRow = $model->row($id);
+
+
+
+    # we get the new valeus from the row otherwise we could not get the
+    # transformed values for some multi-params types
+    for my $fieldName (keys %changedValues) {
+        my $new = '';
+
+        my $value = $changedValues{$fieldName};
+        my $old = $value->{old};
+        if ($newRow->elementExists($fieldName)) {
+            $new = $newRow->valueByName($fieldName);
+            if ((defined $new) and (defined $old) and ($new eq $old)  ) {
+                next;
+            }
+        }
+        $self->_auditLog('set', $value->{id}, $new, $old);
+    }
+
     use Data::Dumper;
     EBox::debug('changedValues ' . Dumper(\%changedValues));
-
-    for my $fieldName (keys %changedValues) {
-        my $value = $changedValues{$fieldName};
-        $self->_auditLog('set', $value->{id}, $value->{new}, $value->{old});
-    }
 
     my $editField = $self->param('editfield');
     if (not $editField) {
