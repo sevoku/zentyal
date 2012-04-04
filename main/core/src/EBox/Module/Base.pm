@@ -1198,7 +1198,7 @@ sub runMonthlyQuery
         (($year == $endyear) and ($month <= $endmonth))
     ) {
         my $date_where = "date >= '$year-$month-01 00:00:00' AND " .
-            "date < date '$year-$month-01 00:00:00' + interval '1 month'";
+            "date < DATE_ADD('$year-$month-01 00:00:00', INTERVAL 1 month)";
         my $new_where;
         if (defined($orig_where)) {
             $new_where = "$orig_where AND $date_where";
@@ -1328,7 +1328,7 @@ sub runQuery
 
     my $orig_where = $query->{'where'};
     my $date_where = "date >= '$begyear-$begmonth-01 00:00:00' AND " .
-                "date < date '$endyear-$endmonth-01 00:00:00' + interval '1 month'";
+                "date < DATE_ADD('$endyear-$endmonth-01 00:00:00', INTERVAL 1 month)";
     my $new_where;
     unless (defined($query->{'options'}) and
             defined($query->{'options'}->{'no_date_in_where'}) and
@@ -1376,7 +1376,7 @@ sub runCompositeQuery
 
     my $orig_where = $query->{'where'};
     my $date_where = "date >= '$begyear-$begmonth-01 00:00:00' AND " .
-                "date < date '$endyear-$endmonth-01 00:00:00' + interval '1 month'";
+                "date < DATE_ADD('$endyear-$endmonth-01 00:00:00',  INTERVAL 1 month)";
     my $new_where;
     if (defined($orig_where)) {
         $new_where = "$orig_where AND $date_where";
@@ -1393,7 +1393,7 @@ sub runCompositeQuery
     for my $k (@keys) {
         $data->{$k} = {};
         my $date_where = "date >= '$begyear-$begmonth-01 00:00:00' AND " .
-                    "date < date '$endyear-$endmonth-01 00:00:00' + interval '1 month'";
+                    "date < DATE_ADD('$endyear-$endmonth-01 00:00:00', INTERVAL 1 month)";
         my $new_where;
         if (defined($orig_where)) {
             $new_where = "$orig_where AND $date_where";
@@ -1638,7 +1638,7 @@ sub _consolidationValuesForMonth
     my @dateWherePortions;
     foreach my $table (@{ $query->{from_tables} }) {
         push @dateWherePortions, "($table.timestamp >= '$beginTime' AND " .
-            "$table.timestamp < date '$beginMonth' + interval '1 month')";
+            "$table.timestamp < DATE_ADD('$beginMonth', INTERVAL 1 month))";
 
     }
 
@@ -1665,7 +1665,7 @@ sub _lastConsolidationValuesForMonth
     my @dateWherePortions;
     foreach my $table (@{ $query->{from_tables} }) {
         push @dateWherePortions, "($table.timestamp >= '$beginTime' AND " .
-            "$table.timestamp < date '$beginMonth' + interval '1 month')";
+            "$table.timestamp < DATE_ADD('$beginMonth', INTERVAL 1 month))";
     }
 
     my $date_where = join ' AND ', @dateWherePortions;
