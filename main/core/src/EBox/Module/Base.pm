@@ -1433,7 +1433,7 @@ sub _consolidateReportStartDate
     my ($self, $db, $target_table, $query) = @_;
 
     my $res = $db->query_hash({
-            'select' => 'EXTRACT(EPOCH FROM last_date) AS date',
+            'select' => 'UNIX_TIMESTAMP(last_date) AS date',
             'from' => 'report_consolidation',
             'where' => "report_table = '$target_table'"
                               });
@@ -1446,7 +1446,7 @@ sub _consolidateReportStartDate
     } else {
         # get a reasonable first date from timestamp of source tables
         $res = $self->_unionQuery($db, {
-                'select' => 'EXTRACT(EPOCH FROM timestamp) AS date',
+                'select' => 'UNIX_TIMESTAMP(timestamp) AS date',
                 'from' => $query->{'from'},
                 'order' => "timestamp",
                 'limit' => 1
