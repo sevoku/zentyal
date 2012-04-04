@@ -1057,7 +1057,7 @@ sub _consolidate
                                             accummulate => sub {
                                                 my ($v) = @_;
                                                 if ($v eq 'drop') {
-                                                    return 'drop';
+                                                    return 'dropped_packets';
                                                 }
 
 
