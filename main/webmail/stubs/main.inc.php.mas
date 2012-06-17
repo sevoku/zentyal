@@ -42,7 +42,6 @@ my $pluginStr = join ',', @plugins;
 */
 
 $rcmail_config = array();
-
 // system error reporting: 1 = log; 2 = report (not implemented yet), 4 = show, 8 = trace
 $rcmail_config['debug_level'] = 1;
 
@@ -99,8 +98,8 @@ $rcmail_config['default_port'] = <% $imapPort %>;
 
 // IMAP auth type. Can be "auth" (CRAM-MD5), "plain" (PLAIN) or "check" to auto detect.
 // Optional, defaults to "check"
-% if (defined $imapAuthType) {
-$rcmail_config['imap_auth_type'] = null;
+% if (not defined $imapAuthType) {
+$rcmail_config['imap_auth_type'] = "check";
 % } else {
 $rcmail_config['imap_auth_type'] = '<% $imapAuthType %>';
 % }
