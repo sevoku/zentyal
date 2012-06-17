@@ -104,11 +104,9 @@ sub _setConf
                          $params,
                         );
 
-#    my $dbParams = $self->_dbParams();
     $self->writeConfFile(
                          DB_INC_FILE,
                          'webmail/db.inc.php.mas',
-#                         $dbParams,
                           []
                         );
 
