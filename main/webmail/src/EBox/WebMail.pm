@@ -34,6 +34,7 @@ use File::Slurp;
 
 use constant {
     MAIN_INC_FILE => '/etc/roundcube/main.inc.php',
+    DB_INC_FILE => '/etc/roundcube/db.inc.php',
     DES_KEY_FILE  => EBox::Config::conf() . 'roundcube.key',
     SIEVE_PLUGIN_INC_USR_FILE =>
            '/usr/share/roundcube/plugins/managesieve/config.inc.php',
@@ -102,6 +103,15 @@ sub _setConf
                          'webmail/main.inc.php.mas',
                          $params,
                         );
+
+#    my $dbParams = $self->_dbParams();
+    $self->writeConfFile(
+                         DB_INC_FILE,
+                         'webmail/db.inc.php.mas',
+#                         $dbParams,
+                          []
+                        );
+
 
     if ($managesieve) {
         $self->_setManageSievePluginConf();
@@ -250,6 +260,11 @@ sub usedFiles
         {
             'file' => MAIN_INC_FILE,
             'reason' => __('To configure Roundcube webmail.'),
+            'module' => 'webmail'
+        },
+        {
+            'file' => DB_INC_FILE,
+            'reason' => __('To configure data base access for Roundcube webmail.'),
             'module' => 'webmail'
         },
         {

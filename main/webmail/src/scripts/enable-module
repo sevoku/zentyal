@@ -1,9 +1,9 @@
 #!/bin/bash -x
 
-db_name=roundcube
-db_user=roundcube
+db_name=roundcube_zentyal
+db_user=roundcube_z
 db_pass=`tr -dc A-Za-z0-9 < /dev/urandom | head -c8`
-DB_CONF_FILE=/etc/roundcube/debian-db.php
+DB_CONF_FILE=/etc/roundcube/zentyal-db.php
 POPULATE_SCRIPT=/usr/share/dbconfig-common/data/roundcube/install/mysql
 
 echo "CREATE DATABASE $db_name;

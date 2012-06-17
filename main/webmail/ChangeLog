@@ -1,3 +1,5 @@
+HEAD
+	+ Using roundcube_zentyal db to avoid clash with dpkg managed db
 2.3.1
 	+ Adapted to new Model management framework
 2.3
