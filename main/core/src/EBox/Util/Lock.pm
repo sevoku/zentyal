@@ -19,6 +19,7 @@ use strict;
 use warnings;
 
 use EBox::Config;
+use EBox::Exceptions::Lock;
 
 use Fcntl qw(:flock);
 
