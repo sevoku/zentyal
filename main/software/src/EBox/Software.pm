@@ -39,7 +39,7 @@ use Fcntl qw(:flock);
 use AptPkg::Cache;
 
 use constant {
-    LOCK_FILE      => EBox::Config::tmp() . 'ebox-software-lock',
+    LOCK_FILE      => 'ebox-software-lock',
     LOCKED_BY_KEY  => 'lockedBy',
     LOCKER_PID_KEY => 'lockerPid',
     CRON_FILE      => '/etc/cron.d/zentyal-auto-updater',
@@ -661,8 +661,7 @@ sub lock
         throw EBox::Exceptions::MissingArgument('by');
     }
 
-    open( $self->{lockFile}, '>', LOCK_FILE);
-    flock( $self->{lockFile}, LOCK_EX );
+    EBox::Util::Lock::lock(LOCK_FILE);
 
     $self->st_set_string(LOCKED_BY_KEY, $params{by});
     $self->st_set_int(LOCKER_PID_KEY, $$);
@@ -681,14 +680,7 @@ sub unlock
 {
     my ($self) = @_;
 
-    unless ( exists( $self->{lockFile} )) {
-        throw EBox::Exceptions::Internal('The ebox-module has not '
-                                         . 'locked previously');
-    }
-
-    flock( $self->{lockFile}, LOCK_UN );
-    close( $self->{lockFile} );
-    undef $self->{lockFile};
+    EBox::Util::Lock::unlock(LOCK_FILE);
 
     $self->st_unset(LOCKED_BY_KEY);
     $self->st_unset(LOCKER_PID_KEY);
@@ -863,16 +855,27 @@ sub _isModLocked
 {
     my ($self) = @_;
 
-    my $lockedBy = $self->st_get_string(LOCKED_BY_KEY);
+    my $locked;
+    try {
+        $self->lock(by => '_isModLocked');
+        $locked = 0;
+    } catch EBox::Exceptions::Lock with {
+        $locked = 1;
+    };
 
-    if ( $lockedBy ) {
-        unless ( $$ == $self->st_get_int(LOCKER_PID_KEY)) {
-            throw EBox::Exceptions::External(__x('Software management is currently '
-                                                 . ' locked by {locker}. Please, try'
-                                                 . ' again later',
-                                                 locker => $lockedBy));
-        }
+    if (not $locked) {
+        $self->unlock();
+    } else {
+         # XXX always exception
+        my $lockedBy = $self->st_get_string(LOCKED_BY_KEY);
+        $lockedBy or $lockedBy = $$;
+        throw EBox::Exceptions::External(__x('Software management is currently '
+                                                         . ' locked by {locker}. Please, try'
+                                                             . ' again later',
+                                             locker => $lockedBy));
     }
+    
+    return $locked;
 }
 
 # Method: updateStatus
