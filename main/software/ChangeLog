@@ -1,3 +1,5 @@
+HEAD
+	+ More robust implementation of software module lock-related methods
 2.3.3
 	+ Add proper 2.3 repository in initial-setup
 	+ Adapted to new Model management framework
