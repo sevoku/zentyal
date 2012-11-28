@@ -162,6 +162,32 @@ sub aptQAConfPath
     return '/etc/apt/apt.conf.d/99zentyal';
 }
 
+# Method: zarafaRepoSourcePath
+#
+#      Return the path to the zarafa repository source
+#
+# Returns:
+#
+#      String - the path
+#
+sub zarafaRepoSourcePath
+{
+    return '/etc/apt/sources.list.d/zentyal-zarafa.list';
+}
+
+# Method: zarafaRepoPreferencesPath
+#
+#      Return the path to the zarafa preferences file
+#
+# Returns:
+#
+#      String - the path
+#
+sub zarafaRepoPreferencesPath
+{
+    return '/etc/apt/preferences.d/02zentyal-zarafa';
+}
+
 # Method: JohnHomeDirPath
 #
 #      Return the path to the John the Ripper home directory

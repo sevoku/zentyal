@@ -1,0 +1,6 @@
+<%args>
+  $archive
+</%args>
+Package: zarafa*
+Pin: release a=<% $archive %>
+Pin-Priority: 600

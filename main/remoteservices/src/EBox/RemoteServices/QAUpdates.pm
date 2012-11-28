@@ -55,7 +55,7 @@ sub _setQAUpdates
     # Set the QA Updates if the subscription level is greater than basic
     my $rs = EBox::Global->modInstance('remoteservices');
     return unless ($rs->eBoxSubscribed());
-    return unless ($rs->subscriptionLevel(1) > 0);
+    return unless ($rs->subscriptionLevel('force') > 0);
 
     _setQASources();
     _setQAAptPubKey();
@@ -69,6 +69,12 @@ sub _setQAUpdates
         }
     } else {
         EBox::info('No software module installed QA updates should be done by hand');
+    }
+
+    # TODO: Enterprise Zarafa
+    if ( $rs->commAddOn('force') ) {
+        _setZarafaSources();
+        _setZarafaPreferences();
     }
 }
 
@@ -113,6 +119,64 @@ sub _setQASources
     EBox::Sudo::root("install -m 0644 '$tmpFile' '$destination'");
 }
 
+# Set the Zarafa repository
+sub _setZarafaSources
+{
+    my $archive = _zarafaArchive();
+    my $repositoryHostname = _repositoryHostname();
+
+    my $output;
+    my $interp = new HTML::Mason::Interp(out_method => \$output);
+    my $sourcesFile = EBox::Config::stubs . 'remoteservices/qa-sources.mas';
+    my $comp = $interp->make_component(comp_file => $sourcesFile);
+    my $cred = EBox::RemoteServices::Cred->new();
+    my $credentials = $cred->cloudCredentials();
+    my $user = $cred->subscribedHostname();
+    # Password: UUID in hexadecimal format (without '0x')
+    my $ug = new Data::UUID;
+    my $bin_uuid = $ug->from_string($credentials->{uuid});
+    my $hex_uuid = $ug->to_hexstring($bin_uuid);
+    my $pass = substr($hex_uuid, 2);                # Remove the '0x'
+
+    my @tmplParams = ( (repositoryHostname  => $repositoryHostname),
+                       (archive             => $archive),
+                       (user                => $user),
+                       (pass                => $pass),
+                       (components          => [ 'main' ]) );
+    # Secret variables for testing
+    if ( EBox::Config::configkey('zarafa_repo_port') ) {
+        push(@tmplParams, (port => EBox::Config::configkey('zarafa_repo_port')));
+    }
+    if ( EBox::Config::boolean('qa_updates_repo_no_ssl') ) {
+        push(@tmplParams, (ssl => (not EBox::Config::boolean('zarafa_repo_no_ssl'))));
+    }
+
+    $interp->exec($comp, @tmplParams);
+
+    my $fh = new File::Temp(DIR => EBox::Config::tmp());
+    my $tmpFile = $fh->filename();
+    File::Slurp::write_file($tmpFile, $output);
+    my $destination = EBox::RemoteServices::Configuration::zarafaRepoSourcePath();
+    EBox::Sudo::root("install -m 0644 '$tmpFile' '$destination'");
+}
+
+sub _setZarafaPreferences
+{
+    my $output;
+    my $interp = new HTML::Mason::Interp(out_method => \$output);
+    my $prefsFile = EBox::Config::stubs . 'remoteservices/zarafa-preferences.mas';
+    my $comp = $interp->make_component(comp_file  => $prefsFile);
+    $interp->exec($comp, ( (archive => _zarafaSuite()) ));
+
+    my $fh = new File::Temp(DIR => EBox::Config::tmp());
+    my $tmpFile = $fh->filename();
+    File::Slurp::write_file($tmpFile, $output);
+
+    my $preferencesFile = EBox::RemoteServices::Configuration::zarafaRepoPreferencesPath();
+    EBox::Sudo::root("install -m 0644 '$tmpFile' '$preferencesFile'");
+}
+
+
 # Get the ubuntu version
 sub _ubuntuVersion
 {
@@ -140,7 +204,6 @@ sub _archive
     my $zentyalVersion = _zentyalVersion();
 
     return "zentyal-qa-$zentyalVersion-$ubuntuVersion";
-
 }
 
 # Get the suite of archives to set preferences
@@ -149,11 +212,26 @@ sub _suite
     return 'zentyal-qa';
 }
 
+# Get the suite of zarafa archive to set its preferences
+sub _zarafaSuite
+{
+    return 'zentyal-zarafa-qa';
+}
+
 # Set the QA apt repository public key
 sub _setQAAptPubKey
 {
     my $keyFile = EBox::Config::scripts('remoteservices') . '/zentyal-qa.pub';
     EBox::Sudo::root("apt-key add $keyFile");
+}
+
+# Get the zarafa archive name
+sub _zarafaArchive
+{
+    my $ubuntuVersion = _ubuntuVersion();
+    my $zentyalVersion = _zentyalVersion();
+
+    return "zentyal-zarafa-qa-$zentyalVersion-$ubuntuVersion";
 }
 
 sub _setQAAptPreferences
@@ -243,6 +321,25 @@ sub _removeAptQAConf
     EBox::Sudo::root("rm -f '$path'");
 }
 
+# Remove Zarafa repository configuration
+sub _removeZarafaRepo
+{
+    _removeZarafaRepoSources();
+    _removeZarafaRepoPreferences();
+}
+
+sub _removeZarafaRepoSources
+{
+    my $path = EBox::RemoteServices::Configuration::zarafaRepoSourcePath();
+    EBox::Sudo::root("rm -f '$path'");
+}
+
+sub _removeZarafaRepoPreferences
+{
+    my $path = EBox::RemoteServices::Configuration::zarafaRepoPreferencesPath();
+    EBox::Sudo::root("rm -f '$path'");
+}
+
 # Downgrade current subscription, if necessary
 # Things to be done:
 #   * Remove QA updates configuration
@@ -257,6 +354,14 @@ sub _downgrade
             or -f EBox::RemoteServices::Configuration::aptQAPreferencesPath() ) {
             # Requires to downgrade
             _removeQAUpdates();
+        }
+    }
+    # TODO: Enterprise zarafa
+    if (not $rs->eBoxSubscribed() or not $rs->commAddOn() ) {
+        if ( -f EBox::RemoteServices::Configuration::zarafaRepoSourcePath()
+            or -f EBox::RemoteServices::Configuration::zarafaRepoPreferencesPath() ) {
+            # Requires to downgrade
+            _removeZarafaRepo();
         }
     }
 }
