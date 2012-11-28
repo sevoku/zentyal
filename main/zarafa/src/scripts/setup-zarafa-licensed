@@ -1,0 +1,56 @@
+#!/bin/bash
+
+# Set up zarafa licenses
+# It removes any previous entered license!
+# It assumes the first license is the base one
+
+delete=
+while getopts ":-dh" opt; do
+    case $opt in
+        d)
+            delete="true"
+            ;;
+        h)
+            echo "Usage: $0 [-d|-h|base_license cal1 cal2 ...]"
+            exit 0
+            ;;
+        \?)
+            echo "Invalid option: -$OPTARG"
+            ;;
+    esac
+done
+shift $((OPTIND - 1))
+
+if [ -z "$delete" -a -z "$*" ]; then
+   echo "No licenses were passed"
+   exit 1
+fi
+
+LICENSE_DIR=/etc/zarafa/license
+
+if [ -d $LICENSE_DIR ]; then
+    # Remove everything that was inside
+    rm -f ${LICENSE_DIR}/*
+else
+    mkdir -p $LICENSE_DIR
+fi 
+
+
+if [ -n "$delete" ]; then
+    licensed=no
+else
+    n_cal=0
+    for license in $@; do
+        if [ $(ls $LICENSE_DIR | wc -l) -eq 0 ]; then
+            # No files inside
+            echo $license > ${LICENSE_DIR}/base
+        else
+            echo $license > ${LICENSE_DIR}/cal$n_cal
+        fi
+        n_cal=$(( n_cal + 1 ))
+    done
+    licensed=yes
+fi
+# Notify zentyal
+sed -ri "s/zarafa_licensed\s+=.*/zarafa_licensed = ${licensed}/" /etc/zentyal/zarafa.conf
+/etc/init.d/zentyal zarafa restart
