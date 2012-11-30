@@ -71,8 +71,7 @@ sub _setQAUpdates
         EBox::info('No software module installed QA updates should be done by hand');
     }
 
-    # TODO: Enterprise Zarafa
-    if ( $rs->commAddOn('force') ) {
+    if ( keys(%{$rs->addOnDetails('zarafa', 'force')}) ) {
         _setZarafaSources();
         _setZarafaPreferences();
     }
@@ -142,6 +141,7 @@ sub _setZarafaSources
                        (archive             => $archive),
                        (user                => $user),
                        (pass                => $pass),
+                       (subdir              => 'zarafa/'), # It must have trailing slash
                        (components          => [ 'main' ]) );
     # Secret variables for testing
     if ( EBox::Config::configkey('zarafa_repo_port') ) {
@@ -356,10 +356,10 @@ sub _downgrade
             _removeQAUpdates();
         }
     }
-    # TODO: Enterprise zarafa
-    if (not $rs->eBoxSubscribed() or not $rs->commAddOn() ) {
+    if (not $rs->eBoxSubscribed()
+        or ( scalar(keys(%{$rs->addOnDetails('zarafa', 'force')})) == 0) ) {
         if ( -f EBox::RemoteServices::Configuration::zarafaRepoSourcePath()
-            or -f EBox::RemoteServices::Configuration::zarafaRepoPreferencesPath() ) {
+             or -f EBox::RemoteServices::Configuration::zarafaRepoPreferencesPath() ) {
             # Requires to downgrade
             _removeZarafaRepo();
         }
