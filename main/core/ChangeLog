@@ -1,4 +1,5 @@
 HEAD
+	+ Make dashboard template support literal utf8 characters
 	+ Also decode CGI unsafe characters parameters as utf8
 	+ Adapted file downloads to the new utf8 fixes
 	+ Write backup files in raw mode to avoid utf8 problems

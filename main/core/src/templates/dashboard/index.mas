@@ -8,6 +8,7 @@
 </%args>
 <%init>
 use EBox::Gettext;
+use utf8;
 </%init>
 <script type="text/javascript" src="/data/js/prototype.js">//</script>
 <script type="text/javascript" src="/data/js/scriptaculous/scriptaculous.js">//</script>
