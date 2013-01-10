@@ -1,4 +1,7 @@
 HEAD
+	+ ClientRawBase can handle exceptions in form of scalars and
+	  references to scalars. This avoid the masking of the real error when
+	  they are used.
 	+ Fix input badly hidden in the logs screen
 	+ reloadTable from DataTable now remove cached fields as well
 3.0.10

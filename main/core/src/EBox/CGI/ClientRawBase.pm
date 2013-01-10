@@ -218,14 +218,14 @@ sub run
                     "be found in the logs.");
             $self->_print_error($error);
         } else {
-            if ($ex->can('text')) {
+            my $refType = ref $ex;
+            if ($refType and ($refType ne 'SCALAR') and $ex->can('text')) {
                 $logger->error('Exception: ' . $ex->text());
             } else {
-                $logger->error("Unknown exception");
+                $logger->error("Exception: $ex");
             }
-
-            throw $ex;
         }
+        throw $ex;
     };
 }
 
