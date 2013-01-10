@@ -219,10 +219,12 @@ sub run
             $self->_print_error($error);
         } else {
             my $refType = ref $ex;
-            if ($refType and ($refType ne 'SCALAR') and $ex->can('text')) {
+            if ($refType and ($refType ne 'SCALAR') and $ex->isa('Error')) {
                 $logger->error('Exception: ' . $ex->text());
             } else {
-                $logger->error("Exception: $ex");
+                my $exStr = ($refType eq 'SCALAR') ? ${ $ex  } : $ex;
+                $logger->error("Exception: $exStr");
+                $ex = Error->new('-text' => $exStr);
             }
         }
         throw $ex;
