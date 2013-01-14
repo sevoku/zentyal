@@ -1,9 +1,13 @@
 <%args>
-    @domains => ()
+    @zarafaDomains => ()
+    %relayDomains => ()
 </%args>
-% foreach my $domain (@domains) {
+% foreach my $domain (@zarafaDomains) {
 % # exclude ham/spam account in behalf of mailfilter
 ham@<% $domain %> dovecot
 spam@<% $domain %> dovecot
 <% $domain %>   lmtp:127.0.0.1:2003
+% }
+% while (my ($pattern, $result) = each %relayDomains) {
+<% $pattern %> <% $result %>
 % }

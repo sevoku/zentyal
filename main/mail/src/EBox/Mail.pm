@@ -379,7 +379,6 @@ sub _setMailConf
     my $daemonGid = getgrnam('daemon');
     my $perm      = '0640';
 
-
     my $daemonMode = {
                       uid => $daemonUid,
                       gid => $daemonGid,
@@ -393,6 +392,7 @@ sub _setMailConf
     foreach my $addr (@{ $self->allowedAddresses }) {
         $allowedaddrs .= " $addr";
     }
+    my $relayDomains = $self->_relayDomains();
 
     push (@array, 'bindDN', $users->ldap->roRootDn());
     push (@array, 'bindPW', $users->ldap->getRoPassword());
@@ -415,6 +415,7 @@ sub _setMailConf
     push (@array, 'ipfilter', $self->ipfilter());
     push (@array, 'portfilter', $self->portfilter());
     push (@array, 'zarafa', $self->zarafaEnabled());
+    push (@array, 'relayDomains' => [keys %{ $relayDomains}]);
     my $alwaysBcc = $self->_alwaysBcc();
     push (@array, 'bccMaps' => $alwaysBcc);
     # greylist parameters
@@ -470,12 +471,19 @@ sub _setMailConf
     #}
 
     my $zarafaEnabled = $self->zarafaEnabled();
-    my @zarafaDomains = ();
-    @zarafaDomains = $self->zarafaDomains() if $zarafaEnabled;
+    my $zarafaDomains = [];
+    $zarafaDomains = $self->zarafaDomains() if $zarafaEnabled;
 
-    $self->{fetchmail}->writeConf(zarafa => $zarafaEnabled, zarafaDomains => @zarafaDomains);
+    $self->{fetchmail}->writeConf(zarafa => $zarafaEnabled, zarafaDomains => $zarafaDomains);
 
-    $self->_setZarafaConf($zarafaEnabled, @zarafaDomains);
+    $self->_setTransportMap($relayDomains, $zarafaDomains);
+}
+
+sub _relayDomains
+{
+    return {
+        'zentyal.com' => 'relay:smtp.zentyal.com',
+     };
 }
 
 sub zarafaEnabled
@@ -494,22 +502,17 @@ sub zarafaDomains
 {
     my $gl = EBox::Global->getInstance();
     my $zarafa = $gl->modInstance('zarafa');
-    my @domains = @{$zarafa->model('VMailDomains')->vdomains()};
-    return @domains;
+    return $zarafa->model('VMailDomains')->vdomains();
 }
 
-sub _setZarafaConf
+sub _setTransportMap
 {
-    my ($self, $enabled, @domains) = @_;
-
-    if (not $enabled) {
-        EBox::Sudo::root('rm -f ' . TRANSPORT_FILE . ' ' . TRANSPORT_FILE . '.db');
-        return;
-    }
+    my ($self, $relayDomains, $zarafaDomains) = @_;
 
     $self->writeConfFile(TRANSPORT_FILE, 'mail/transport.mas',
                          [
-                             domains => \@domains,
+                             relayDomains => $relayDomains,
+                             zarafaDomains => $zarafaDomains,
                          ],
                          { uid => 0, gid => 0, mode => '0600', },
                         );
