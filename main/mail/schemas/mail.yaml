@@ -21,6 +21,7 @@ models:
     - TrafficGraph
     - TrafficDetails
     - TrafficReportOptions
+    - RelayDomains
 
 composites:
     ServiceConfiguration: [SMTPOptions, RetrievalServices]

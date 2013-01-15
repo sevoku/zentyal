@@ -392,7 +392,7 @@ sub _setMailConf
     foreach my $addr (@{ $self->allowedAddresses }) {
         $allowedaddrs .= " $addr";
     }
-    my $relayDomains = $self->_relayDomains();
+    my $relayDomains = $self->model('RelayDomains')->domains();
     my $addressVerifySender = EBox::Config::configkey('address_verify_sender');
 
     push (@array, 'bindDN', $users->ldap->roRootDn());
@@ -480,13 +480,6 @@ sub _setMailConf
 
     $self->_setTransportMap($relayDomains, $zarafaDomains);
     $self->_setRestrictedDestinationsMap($relayDomains);
-}
-
-sub _relayDomains
-{
-    return {
-        'zentyal.com' => 'relay:smtp.zentyal.com',
-     };
 }
 
 sub zarafaEnabled
@@ -1519,10 +1512,16 @@ sub menu
                 );
     $folder->add(
                  new EBox::Menu::Item(
+                                      'url' => 'Mail/View/RelayDomains',
+                                      'text' => __('Relay domains')
+                                     )
+                );
+    $folder->add(
+                 new EBox::Menu::Item(
                                       'url' => 'Mail/QueueManager',
                                       'text' => __('Queue Management')
-                 )
-    );
+                                     )
+                );
 
     # add filterproviders menu items
     my $global = EBox::Global->getInstance(1);

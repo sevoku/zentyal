@@ -72,7 +72,6 @@ my $certFile = '/etc/postfix/sasl/postfix.pem';
 my $keyFile  = '/etc/postfix/sasl/postfix.pem';
 
 my $ldapServer = 'localhost:' . $ldap->{port};
-unshift @relayDomains,
 </%init>
 
 # require helo
