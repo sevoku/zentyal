@@ -117,7 +117,6 @@ sub preconditionFailMsg
               'status section in order to use it.');
 }
 
-
 sub alwaysBccByVDomain
 {
     my ($self) = @_;
@@ -180,6 +179,13 @@ __x(
                                         );
     }
 
+    my $mailMod = $self->parentModule();
+    if ($mailMod->model('RelayDomains')->existsDomain($vdomain)) {
+        throw EBox::Exceptions::External(
+            __x('{vd} is already listed as external relay domain', vd => $vdomain)
+           );
+    }
+
     $self->_checkVDomainIsNotInExternalAliases($vdomain);
 
     if ($vdomain eq 'sieve') {
@@ -188,7 +194,7 @@ q{'sieve' is a reserved name in this context, please choose another name}
                                             ));
     }
 
-    my $mailname = EBox::Global->modInstance('mail')->mailname;
+    my $mailname = $mailMod->mailname;
     if ($vdomain eq $mailname) {
             throw EBox::Exceptions::InvalidData(
                                data => __('Mail virtual domain'),
@@ -199,9 +205,6 @@ __('The virtual domain name cannot be equal to the mailname')
     }
 }
 
-
-
-
 sub existsVDomain
 {
     my ($self, $vdomain) = @_;
@@ -209,7 +212,6 @@ sub existsVDomain
     my $res = $self->findValue(vdomain => $vdomain);
     return defined $res;
 }
-
 
 sub existsVDomainAlias
 {
