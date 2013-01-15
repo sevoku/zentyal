@@ -49,7 +49,7 @@ sub _table
         'printableTableName' => __('Relayed Domains'),
         'pageTitle'         => __('Relay Domains'),
         'defaultController' => '/Mail/Controller/RelayDomains',
-        'defaultActions' => ['add', 'del', 'edit', 'changeView'],
+        'defaultActions' => ['add', 'del', 'editField', 'changeView'],
         'tableDescription' => \@tableHead,
         'menuNamespace' => 'Mail/RelayDomains',
         'automaticRemove'  => 1,
