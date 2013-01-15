@@ -393,6 +393,7 @@ sub _setMailConf
         $allowedaddrs .= " $addr";
     }
     my $relayDomains = $self->_relayDomains();
+    my $addressVerifySender = EBox::Config::configkey('address_verify_sender');
 
     push (@array, 'bindDN', $users->ldap->roRootDn());
     push (@array, 'bindPW', $users->ldap->getRoPassword());
@@ -416,6 +417,7 @@ sub _setMailConf
     push (@array, 'portfilter', $self->portfilter());
     push (@array, 'zarafa', $self->zarafaEnabled());
     push (@array, 'relayDomains' => [keys %{ $relayDomains}]);
+    push (@array, 'addressVerifySender' => $addressVerifySender);
     my $alwaysBcc = $self->_alwaysBcc();
     push (@array, 'bccMaps' => $alwaysBcc);
     # greylist parameters
@@ -477,6 +479,7 @@ sub _setMailConf
     $self->{fetchmail}->writeConf(zarafa => $zarafaEnabled, zarafaDomains => $zarafaDomains);
 
     $self->_setTransportMap($relayDomains, $zarafaDomains);
+    $self->_setRestrictedDestinationsMap($relayDomains);
 }
 
 sub _relayDomains
@@ -517,6 +520,22 @@ sub _setTransportMap
                          { uid => 0, gid => 0, mode => '0600', },
                         );
     EBox::Sudo::root('/usr/sbin/postmap ' . TRANSPORT_FILE);
+}
+
+sub _setRestrictedDestinationsMap
+{
+    my ($self, $relayDomains) = @_;
+    my @domains = keys %{ $relayDomains };
+    my $file = '/etc/postfix/restricted_destinations';
+    my @contents = map {
+        "$_ gateway_recipient_restriction"
+    } @domains;
+
+    EBox::Module::Base::writeFile(
+        $file,
+        "@contents",
+       );
+    EBox::Sudo::root('/usr/sbin/postmap ' . $file);
 }
 
 sub _alwaysBcc

@@ -8,6 +8,7 @@
 
         $vdomainDN
         @relayDomains
+        $addressVerifySender
 
         $relay
         $relayAuth
@@ -36,6 +37,8 @@
 <%init>
 use EBox::Gettext;
 
+my $checkRecipientAccessForRestricted = 'check_recipient_access hash:/etc/postfix/restricted_destinations';
+
 my $smtpRecipientRestrictions;
 $smtpRecipientRestrictions .= 'permit_sasl_authenticated, ';
 $smtpRecipientRestrictions .=  'permit_mynetworks, ';
@@ -55,11 +58,15 @@ if ($greylist) {
                                         $greylistPort ;
     $smtpRecipientRestrictions .= ", $greylistRecipientRestriction";
 }
+$smtpRecipientRestrictions .= ", $checkRecipientAccessForRestricted" if @relayDomains;
 
 # submission is only for local domain users and objects with relay
 # no need to greylist or to do more checks
 my $submissionRecipientRestrictions = 'reject_non_fqdn_sender, reject_non_fqdn_recipient, ';
-$submissionRecipientRestrictions .= 'permit_sasl_authenticated, permit_mynetworks, reject';
+$submissionRecipientRestrictions .= 'permit_sasl_authenticated, permit_mynetworks,';
+$submissionRecipientRestrictions .= " $checkRecipientAccessForRestricted," if @relayDomains;
+$submissionRecipientRestrictions .= 'reject';
+
 
 my $certFile = '/etc/postfix/sasl/postfix.pem';
 my $keyFile  = '/etc/postfix/sasl/postfix.pem';
@@ -172,9 +179,11 @@ smtpd_tls_cert_file = <% $certFile %>
 smtpd_tls_loglevel = 0
 
 # recipient restrictions
+smtpd_restriction_classes = submission_recipient_restrictions gateway_recipient_restrictions
 smtpd_recipient_restrictions = <% $smtpRecipientRestrictions %>
 submission_recipient_restrictions = <% $submissionRecipientRestrictions %>
-smtpd_restriction_classes = submission_recipient_restrictions
+address_verify_sender = <% $addressVerifySender %>
+gateway_recipient_restrictions = reject_unknown_recipient_domain, reject_unverified_recipient
 
 #SASL authentication
 smtpd_sasl_auth_enable = yes
