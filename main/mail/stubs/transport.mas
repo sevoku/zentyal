@@ -9,5 +9,5 @@ spam@<% $domain %> dovecot
 <% $domain %>   lmtp:127.0.0.1:2003
 % }
 % while (my ($pattern, $result) = each %relayDomains) {
-<% $pattern %> <% $result %>
+<% $pattern %> relay:<% $result %>
 % }

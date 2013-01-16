@@ -520,14 +520,12 @@ sub _setRestrictedDestinationsMap
     my ($self, $relayDomains) = @_;
     my @domains = keys %{ $relayDomains };
     my $file = '/etc/postfix/restricted_destinations';
-    my @contents = map {
-        "$_ gateway_recipient_restriction"
-    } @domains;
+    my $contents = '';
+    foreach my $domain ( keys %{ $relayDomains }) {
+        $contents .= "$domain gateway_recipient_restrictions\n";
+    }
 
-    EBox::Module::Base::writeFile(
-        $file,
-        "@contents",
-       );
+    EBox::Module::Base::writeFile($file, $contents);
     EBox::Sudo::root('/usr/sbin/postmap ' . $file);
 }
 
