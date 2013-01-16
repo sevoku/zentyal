@@ -859,10 +859,11 @@ $banned_filename_re = new_RE(
 # See 'man DBI', 'man DBD::mysql', 'man DBD::Pg', ... for details.
 # When chroot-ed, accessing SQL server over inet socket may be more convenient.
 #
-# @lookup_sql_dsn =
+ @lookup_sql_dsn = ( # XXX
 #   ( ['DBI:mysql:database=mail;host=127.0.0.1;port=3306', 'user1', 'passwd1'],
-#     ['DBI:mysql:database=mail;host=host2', 'username2', 'password2'] );
+     ['DBI:mysql:database=amavis;host=127.0.0.1', 'root', 'H9YYU88o'] ); # XXX
 #
+  @storage_sql_dsn = @lookup_sql_dsn;  # none, same, or separate database # XXX
 # ('mail' in the example is the database name, choose what you like)
 # With PostgreSQL the dsn (first element of the triple) may look like:
 #      'DBI:Pg:host=host1;dbname=mail'
@@ -873,20 +874,25 @@ $banned_filename_re = new_RE(
 # is a chance that multiple records will match - the first match wins.
 # If field names are not unique (e.g. 'id'), the later field overwrites the
 # earlier in a hash returned by lookup, which is why we use '*,users.id'.
-# $sql_select_policy = 'SELECT *,users.id FROM users,policy'.
-#   ' WHERE (users.policy_id=policy.id) AND (users.email IN (%k))'.
-#   ' ORDER BY users.priority DESC';
+$sql_select_policy = 'SELECT *,users.id FROM users,policy '.
+   'WHERE (users.policy_id=policy.id) AND (users.email IN (%k)) ' . 
+    ' ORDER BY users.priority DESC';
+
 #
 # The SQL select clause to check sender in per-recipient whitelist/blacklist
 # The first SELECT argument '?' will be users.id from recipient SQL lookup,
 # the %k will be sender addresses (e.g. full address, domain only, catchall).
-# $sql_select_white_black_list = 'SELECT wb FROM wblist,mailaddr'.
-#     ' WHERE (wblist.rid=?) AND (wblist.sid=mailaddr.id)'.
-#     '   AND (mailaddr.email IN (%k))'.
-#   ' ORDER BY mailaddr.priority DESC';
+# 
 
-$sql_select_white_black_list = undef;  # undef disables SQL white/blacklisting
+ $sql_select_white_black_list = 'SELECT wb FROM wblist,mailaddr '
+   .   'WHERE (wblist.rid=?) AND (wblist.sid=mailaddr.id) AND (mailaddr.email IN (%k)) ' .
+   'ORDER BY mailaddr.priority DESC';
 
+
+
+
+#$sql_partition_tag = undef;
+# XXX
 
 # If you decide to pass viruses (or spam) to certain recipients using the
 # above lookup tables or using $final_virus_destiny=D_PASS, you can set
