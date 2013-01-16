@@ -145,13 +145,27 @@ sub _checkSMTP
 sub _checkSMTPIP
 {
     my ($self, $smtp) = @_;
-    # XXX check if it is not a local IP
+    my $netMod = $self->global()->modInstance('network');
+    # XXX refactor with method from network to check that a address is not local
+     foreach my $iface (@{ $netMod->allIfaces() }) {
+         my @addrs = @{ $netMod->ifaceAddresses($iface) };
+         foreach my $addr_r (@addrs) {
+            my $addr = $addr_r->{address};
+            if ($addr eq $smtp) {
+                throw EBox::Exceptions::External(
+                    __x('Cannot use {smtp} because is an address of the local interface {iface}',
+                        smtp => $smtp,
+                        iface => $iface
+                       )
+                   );
+            }
+        }
+     }
 }
 
 sub _checkSMTPHost
 {
     my ($self, $smtp) = @_;
-    # XXX check is nto a local name
     if ($smtp eq 'localhost') {
         throw EBox::Exceptions::External(
             __("You cannot set the local host as SMTP gateway")
@@ -178,6 +192,8 @@ __('The relayed domain gateway cannot be equal to the mailname')
 __('The relayed domain gateway cannot be equal to the server name')
                                            );
     }
+
+    # XXX check is not a local name
 }
 
 1;
