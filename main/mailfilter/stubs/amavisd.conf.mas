@@ -13,6 +13,8 @@ $ldapQueryFilter
 $ldapBindDn
 $ldapBindPasswd
 
+$dbCredentials => undef
+
 $antivirusActive => 1
 $clamdSocket   => undef
 $virusPolicy => 'D_DISCARD'
@@ -39,7 +41,18 @@ $adminAddress
 
 $debug => 0
 </%args>
+<%init>
+# XXX TMP
+if (not  defined $dbCredentials) {
+$dbCredentials = {
+  host =>'127.0.0.1',
+  port => 3306,
+  user =>  'root',
+  password => 'H9YYU88o'
 
+};
+}
+</%init>
 use strict;
 use warnings;
 
@@ -64,7 +77,8 @@ bindPasswd => $ldapBindPasswd,
   adminAddress => $adminAddress,
 &>
 <& bannedFileTypes, bannedTypes => \@bannedFileTypes &>
-<& perRecipientAndPerSender &>
+<& sqlSetup, credentials => $dbCredentials &>
+<& perRecipientAndPerSender, dbCredentials => $dbCredentials &>
 <& resourcesLimits &>
 <& externalPrograms &>
 <& antivirus, active =>$antivirusActive,  clamdSocket => $clamdSocket &>
@@ -748,7 +762,53 @@ $banned_filename_re = new_RE(
 # with a dot.
 </%def>
 
+<%def sqlSetup>
+<%args>
+$credentials
+</%args>
+% if (not defined $credentials) {
+# NO SQL servers
+@lookup_sql_dsn = ();
+@storage_sql_dsn = @lookup_sql_dsn
+% return;
+% }
+# Where to find SQL server(s) and database to support SQL lookups?
+# A list of triples: (dsn,user,passw).   (dsn = data source name)
+# More than one entry may be specified for multiple (backup) SQL servers.
+# See 'man DBI', 'man DBD::mysql', 'man DBD::Pg', ... for details.
+# When chroot-ed, accessing SQL server over inet socket may be more convenient.
 #
+ @lookup_sql_dsn = (
+      ['DBI:mysql:database=mail;host=<% $credentials->{host}%>;port=<% $credentials->{port}%>',
+        <% $credentials->{user} %>,
+        <% $credentials->{password} %>
+        ],
+    );
+#
+  @storage_sql_dsn = @lookup_sql_dsn;  # none, same, or separate database # XXX
+# ('mail' in the example is the database name, choose what you like)
+# With PostgreSQL the dsn (first element of the triple) may look like:
+#      'DBI:Pg:host=host1;dbname=mail'
+
+# The SQL select clause to fetch per-recipient policy settings.
+# The %k will be replaced by a comma-separated list of query addresses
+# (e.g. full address, domain only, catchall).  Use ORDER, if there
+# is a chance that multiple records will match - the first match wins.
+# If field names are not unique (e.g. 'id'), the later field overwrites the
+# earlier in a hash returned by lookup, which is why we use '*,users.id'.
+$sql_select_policy = 'SELECT *,users.id FROM users,policy'.
+   ' WHERE (users.policy_id=policy.id) AND (users.email IN (%k))'.
+   ' ORDER BY users.priority DESC';
+#
+# The SQL select clause to check sender in per-recipient whitelist/blacklist
+# The first SELECT argument '?' will be users.id from recipient SQL lookup,
+# the %k will be sender addresses (e.g. full address, domain only, catchall).
+#
+$sql_select_white_black_list = 'SELECT wb FROM wblist,mailaddr'.
+     ' WHERE (wblist.rid=?) AND (wblist.sid=mailaddr.id)'.
+     '   AND (mailaddr.email IN (%k))'.
+   ' ORDER BY mailaddr.priority DESC';
+</%def>
 
 <%def perRecipientAndPerSender>
 # Section V - Per-recipient and per-sender handling, whitelisting, etc.
@@ -852,41 +912,6 @@ $banned_filename_re = new_RE(
 #   @bypass_spam_checks_acl = ( "!.$mydomain", "." );
 # (a downside of which is that such mail will not count as ham in SA bayes db)
 
-
-# Where to find SQL server(s) and database to support SQL lookups?
-# A list of triples: (dsn,user,passw).   (dsn = data source name)
-# More than one entry may be specified for multiple (backup) SQL servers.
-# See 'man DBI', 'man DBD::mysql', 'man DBD::Pg', ... for details.
-# When chroot-ed, accessing SQL server over inet socket may be more convenient.
-#
- @lookup_sql_dsn = ( # XXX
-#   ( ['DBI:mysql:database=mail;host=127.0.0.1;port=3306', 'user1', 'passwd1'],
-     ['DBI:mysql:database=amavis;host=127.0.0.1', 'root', 'H9YYU88o'] ); # XXX
-#
-  @storage_sql_dsn = @lookup_sql_dsn;  # none, same, or separate database # XXX
-# ('mail' in the example is the database name, choose what you like)
-# With PostgreSQL the dsn (first element of the triple) may look like:
-#      'DBI:Pg:host=host1;dbname=mail'
-
-# The SQL select clause to fetch per-recipient policy settings.
-# The %k will be replaced by a comma-separated list of query addresses
-# (e.g. full address, domain only, catchall).  Use ORDER, if there
-# is a chance that multiple records will match - the first match wins.
-# If field names are not unique (e.g. 'id'), the later field overwrites the
-# earlier in a hash returned by lookup, which is why we use '*,users.id'.
-$sql_select_policy = 'SELECT *,users.id FROM users,policy'.
-   ' WHERE (users.policy_id=policy.id) AND (users.email IN (%k))'.
-   ' ORDER BY users.priority DESC';
-#
-# The SQL select clause to check sender in per-recipient whitelist/blacklist
-# The first SELECT argument '?' will be users.id from recipient SQL lookup,
-# the %k will be sender addresses (e.g. full address, domain only, catchall).
-#
-$sql_select_white_black_list = 'SELECT wb FROM wblist,mailaddr'.
-     ' WHERE (wblist.rid=?) AND (wblist.sid=mailaddr.id)'.
-     '   AND (mailaddr.email IN (%k))'.
-   ' ORDER BY mailaddr.priority DESC';
-
 # If you decide to pass viruses (or spam) to certain recipients using the
 # above lookup tables or using $final_virus_destiny=D_PASS, you can set
 # the variable $addr_extension_virus ($addr_extension_spam) to some
@@ -926,8 +951,6 @@ $replace_existing_extension = 1;	# (default is false)
 # Affects matching of localpart of e-mail addresses (left of '@')
 # in lookups: true = case sensitive, false = case insensitive
 $localpart_is_case_sensitive = 0;	# (default is false)
-
-
 </%def>
 
 
@@ -1269,6 +1292,9 @@ $sa_spam_modifies_subj = 1; # may be a ref to a lookup table, default is true
 
 @whitelist_sender_acl = qw(<% "@whitelist" %>);
 @blacklist_sender_acl = qw(<% "@blacklist" %>);
+
+# enable DKIM
+$enable_dkim_verification = 1
 </%def>
 
 <%def .scalarVar>
