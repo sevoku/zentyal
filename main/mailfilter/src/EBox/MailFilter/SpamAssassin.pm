@@ -48,7 +48,7 @@ sub new
     $self->{vdomains} = new EBox::MailFilter::VDomainsLdap();
 
     bless $self, $class;
-    return $self;
+   return $self;
 }
 
 sub usedFiles
@@ -90,7 +90,6 @@ sub _scores
 sub _manageServices
 {
     my ($self, $action) = @_;
-    EBox::Service::manage(SA_SERVICE, $action);
 
     my $vdomainsLdap = EBox::MailFilter::VDomainsLdap->new();
     my $saLearnService = $vdomainsLdap->learnAccountsExists;
@@ -105,11 +104,9 @@ sub doDaemon
     my ($self, $mailfilterService) = @_;
 
     if ($mailfilterService and $self->isEnabled() and $self->isRunning()) {
-        $self->_pyzorDiscover();
         $self->_manageServices('restart');
     }
     elsif ($mailfilterService and $self->isEnabled()) {
-        $self->_pyzorDiscover();
         $self->_manageServices('start');
     }
     elsif ($self->isRunning()) {
@@ -124,33 +121,6 @@ sub stopService
     if ($self->isRunning) {
         $self->_manageServices('stop');
     }
-}
-
-sub _pyzorDiscover
-{
-    my ($self) = @_;
-
-    my $home = $self->_pyzorHome();
-    EBox::Sudo::root("mkdir -p '$home'");
-    EBox::Sudo::root("touch '$home/servers'");
-    EBox::Sudo::root("chown -R amavis.amavis '$home'");
-
-    return; # DDD
-
-    print "Pyzor discover\n"; # DDD
-    try {
-        EBox::Sudo::root("pyzor --homedir $home discover");
-        print "pyzor discover ok\n";
-    } otherwise {
-        my ($ex) = @_;
-        print "FAIL Pyzor discover $ex\n"; # DDD
-        EBox::error("Error discovering pyzor servers, pyzors checks could not be available: $ex");
-    };
-}
-
-sub _pyzorHome
-{
-    return '/var/lib/amavis/pyzor';
 }
 
 #
@@ -213,7 +183,6 @@ sub writeConf
                        blacklist => $self->blacklistForSpamassassin(),
                       );
     push @confParams, (spamSubject => $self->spamSubjectTag());
-    push @confParams, (pyzorHome => $self->_pyzorHome());
 
     my ($password) = @{EBox::Sudo::root('/bin/cat ' . SA_PASSWD_FILE)};
     push @confParams, (password => $password);

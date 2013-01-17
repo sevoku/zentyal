@@ -19,7 +19,6 @@ $spamSubject => undef
 $password
 %scores => ()
 
-$pyzorHome => undef
 </%args>
 # This is the right place to customize your installation of SpamAssassin.
 #
@@ -139,21 +138,11 @@ whitelist_from <% $addr %>
 blacklist_from <% $addr %>
 % }
 
-
-
 ok_locales <% "@okLocales" %>
-
 
 loadplugin Mail::SpamAssassin::Plugin::DKIM
 full DKIM_VALID     eval:check_dkim_valid()
 full DKIM_VALID_AU  eval:check_dkim_valid_author_sig()
-
-# pyzor
-loadplugin     Mail::SpamAssassin::Plugin::Pyzor
-use_pyzor 1
-% if ($pyzorHome) {
-pyzor_options --homedir <% $pyzorHome %>
-% }
 
 # Rules scores
 % while (my ($rule, $score) = each %scores) {
