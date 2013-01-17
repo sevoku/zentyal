@@ -32,6 +32,7 @@ use EBox::Dashboard::Section;
 
 use EBox::MailFilter::VDomainsLdap;
 use EBox::MailVDomainsLdap;
+use EBox::MailFilter::Amavis::DBEngine;
 
 use EBox::Ldap;
 
@@ -121,13 +122,17 @@ sub writeConf
     my ($self) = @_;
 
     my $ldap = EBox::Global->modInstance('users')->ldap();
-
     my $antivirus   = EBox::Global->modInstance('antivirus');
     my $mailfilter  = EBox::Global->modInstance('mailfilter');
+
+    my $antivirusActive = $self->antivirus();
+    my $antispamActive = $self->antispam();
+
     my $antispam   = $mailfilter->antispam();
+    my $spamThreshold  = $antispam->spamThreshold();
+    my $spamSubject    =  $antispam->spamSubjectTag();
 
     my @masonParams;
-
     push @masonParams, (myhostname => $self->_fqdn());
     push @masonParams, (mydomain => $self->_domain());
     push @masonParams, (localDomains => $self->_localDomains());
@@ -141,13 +146,14 @@ sub writeConf
     push @masonParams, (ldapBindDn       =>  $ldap->rootDn );
     push @masonParams, (ldapBindPasswd   =>  $ldap->getPassword());
 
-    push @masonParams, (antivirusActive  => $self->antivirus());
+    push @masonParams, (antivirusActive  => $antivirusActive);
     push @masonParams, (virusPolicy      => $self->filterPolicy('virus'));
     push @masonParams, (clamdSocket     => $antivirus->localSocket());
 
-    push @masonParams, (antispamActive     => $self->antispam());
-    push @masonParams, (spamThreshold => $antispam->spamThreshold());
-    push @masonParams, (spamSubject   =>  $antispam->spamSubjectTag);
+    push @masonParams, (antispamActive => $antispamActive);
+    push @masonParams, (spamThreshold  => $spamThreshold);
+
+    push @masonParams, (spamSubject   => $spamSubject);
     push @masonParams, (spamPolicy         => $self->filterPolicy('spam'));
     push @masonParams, (antispamWhitelist  => $antispam->whitelistForAmavisConf());
     push @masonParams, (antispamBlacklist  => $antispam->blacklistForAmavisConf());
@@ -172,6 +178,39 @@ sub writeConf
                     };
 
     EBox::Module::Base::writeConfFileNoCheck(AMAVIS_CONF_FILE, '/mailfilter/amavisd.conf.mas', \@masonParams, $fileAttrs);
+
+    # set default policy in sql for external users
+    my $dbEngine = $self->dbEngine();
+    $self->_setSqlPolicy($dbEngine, 'default policy',  {
+        bypass_spam_checks => $antispamActive ? "'Y'" : "'N'",
+        bypass_virus_checks => $antivirusActive ? "'Y'" : "'N'",
+
+        spam_modifies_subj => $spamSubject ? "'Y'" : "'N'",
+        spam_tag2_level  => $spamThreshold,
+        spam_kill_level  => $spamThreshold,
+
+        spam_subject_tag2 => $spamSubject ? "'$spamSubject'" : "''",
+        spam_subject_tag3 => $spamSubject ? "'$spamSubject'" : "''",
+       });
+}
+
+sub _setSqlPolicy
+{
+    my ($self, $dbEngine, $name, $values) = @_;
+    my $table = 'policy';
+    my $selectId = "SELECT id from $table where policy_name ='$name'";
+    my $res = $dbEngine->query($selectId);
+    if (@{ $res }) {
+        my $id = $res->[0]->{id};
+        print "ALREADY exists ID $id\n";
+        use Data::Dumper;
+        print Dumper($values);
+        $dbEngine->update($table, $values, ["id=$id"]);
+    } else {
+        # create a new one
+        $values->{policy_name} = $name;
+        $dbEngine->unbufferedInsert($table, $values);
+    }
 }
 
 sub antivirus
@@ -460,6 +499,11 @@ sub summary
             running       => $mailfilter->antispam()->isRunning(),
             nobutton      => 1);
     $section->add($antispam);
+}
+
+sub dbEngine
+{
+    return EBox::MailFilter::Amavis::DBEngine->new();
 }
 
 1;
