@@ -14,6 +14,7 @@ models:
     - AntispamACL
     - AntispamTraining
     - AntispamVDomainACL
+    - AntispamRules
     - POPProxyConfiguration
     - FilterDetails
     - FilterGraph
@@ -26,7 +27,7 @@ composites:
     Amavis: [AmavisConfiguration, AmavisPolicy, VDomainsFilter, ExternalConnections]
     ExternalConnections: [ExternalMTA, ExternalDomain]
     FileFilter: [FileExtensionACL, MIMETypeACL]
-    Antispam: [AntispamConfiguration, AntispamACL, AntispamTraining]
+    Antispam: [AntispamConfiguration, AntispamACL, AntispamRules, AntispamTraining]
     FilterReport: [FilterReportOptions, FilterGraph, FilterDetails]
     POPProxyReport: [POPProxyReportOptions, POPProxyGraph, POPProxyDetails]
 

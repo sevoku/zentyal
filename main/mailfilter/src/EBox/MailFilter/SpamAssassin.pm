@@ -13,11 +13,10 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
-package EBox::MailFilter::SpamAssassin;
-
 use strict;
 use warnings;
 
+package EBox::MailFilter::SpamAssassin;
 
 use Perl6::Junction qw(any all);
 use File::Slurp qw(read_file write_file);
@@ -64,14 +63,11 @@ sub usedFiles
            );
 }
 
-
 sub _vdomains
 {
     my ($self) = @_;
     return $self->{vdomains};
 }
-
-
 
 sub _confAttr
 {
@@ -85,6 +81,11 @@ sub _confAttr
     return $self->{configuration}->$attr();
 }
 
+sub _scores
+{
+    my $mailfilter = EBox::Global->modInstance('mailfilter');
+    return $mailfilter->model('AntispamRules')->scores();
+}
 
 sub _manageServices
 {
@@ -104,9 +105,11 @@ sub doDaemon
     my ($self, $mailfilterService) = @_;
 
     if ($mailfilterService and $self->isEnabled() and $self->isRunning()) {
+        $self->_pyzorDiscover();
         $self->_manageServices('restart');
     }
     elsif ($mailfilterService and $self->isEnabled()) {
+        $self->_pyzorDiscover();
         $self->_manageServices('start');
     }
     elsif ($self->isRunning()) {
@@ -123,8 +126,32 @@ sub stopService
     }
 }
 
+sub _pyzorDiscover
+{
+    my ($self) = @_;
 
+    my $home = $self->_pyzorHome();
+    EBox::Sudo::root("mkdir -p '$home'");
+    EBox::Sudo::root("touch '$home/servers'");
+    EBox::Sudo::root("chown -R amavis.amavis '$home'");
 
+    return; # DDD
+
+    print "Pyzor discover\n"; # DDD
+    try {
+        EBox::Sudo::root("pyzor --homedir $home discover");
+        print "pyzor discover ok\n";
+    } otherwise {
+        my ($ex) = @_;
+        print "FAIL Pyzor discover $ex\n"; # DDD
+        EBox::error("Error discovering pyzor servers, pyzors checks could not be available: $ex");
+    };
+}
+
+sub _pyzorHome
+{
+    return '/var/lib/amavis/pyzor';
+}
 
 #
 # Method: isEnabled
@@ -142,9 +169,6 @@ sub isEnabled
     my $mailfilter = EBox::Global->modInstance('mailfilter');
     return $mailfilter->antispamNeeded();
 }
-
-
-
 
 sub setVDomainService
 {
@@ -177,6 +201,7 @@ sub writeConf
 
     my @confParams;
     push @confParams, (spamThreshold => $self->spamThreshold());
+    push @confParams, (internalNetworks => $self->internalNetworks());
     push @confParams, (trustedNetworks => $self->trustedNetworks());
     push @confParams, (bayes => $self->bayes);
     push @confParams, (bayesPath => $self->bayesPath);
@@ -188,9 +213,11 @@ sub writeConf
                        blacklist => $self->blacklistForSpamassassin(),
                       );
     push @confParams, (spamSubject => $self->spamSubjectTag());
+    push @confParams, (pyzorHome => $self->_pyzorHome());
 
     my ($password) = @{EBox::Sudo::root('/bin/cat ' . SA_PASSWD_FILE)};
     push @confParams, (password => $password);
+    push @confParams, (scores => $self->_scores());
 
     EBox::Module::Base::writeConfFileNoCheck(SA_CONF_FILE, "mailfilter/local.cf.mas", \@confParams);
 
@@ -559,8 +586,12 @@ sub setVDomainBlacklist
   return $self->_vdomains->setBlacklist($vdomain, $senderList_r);
 }
 
-
 sub trustedNetworks
+{
+    return [];
+}
+
+sub internalNetworks
 {
   my ($self) = @_;
 

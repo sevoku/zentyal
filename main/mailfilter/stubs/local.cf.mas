@@ -12,10 +12,14 @@ $bayesAutolearnHamThreshold
 
 $spamSubject => undef
 
+@internalNetworks
 @trustedNetworks
 @okLocales      => ('all')
 
 $password
+%scores => ()
+
+$pyzorHome => undef
 </%args>
 # This is the right place to customize your installation of SpamAssassin.
 #
@@ -39,6 +43,9 @@ rewrite_header  subject  <% $spamSubject %>
 # report_safe 1
 
 
+% if (@internalNetworks) {
+internal_networks <% "@internalNetworks" %>
+% }
 #   Set which networks or hosts are considered 'trusted' by your mail
 #   server (i.e. not spammers)
 #
@@ -141,6 +148,17 @@ loadplugin Mail::SpamAssassin::Plugin::DKIM
 full DKIM_VALID     eval:check_dkim_valid()
 full DKIM_VALID_AU  eval:check_dkim_valid_author_sig()
 
+# pyzor
+loadplugin     Mail::SpamAssassin::Plugin::Pyzor
+use_pyzor 1
+% if ($pyzorHome) {
+pyzor_options --homedir <% $pyzorHome %>
+% }
+
+# Rules scores
+% while (my ($rule, $score) = each %scores) {
+score <% $rule %> <% $score %>
+% }
 
 <%def .autolearn>
 <%args>
