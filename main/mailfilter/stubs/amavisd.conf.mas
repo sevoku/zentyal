@@ -1294,7 +1294,7 @@ $sa_spam_modifies_subj = 1; # may be a ref to a lookup table, default is true
 @blacklist_sender_acl = qw(<% "@blacklist" %>);
 
 # enable DKIM
-$enable_dkim_verification = 1
+$enable_dkim_verification = 1;
 </%def>
 
 <%def .scalarVar>
