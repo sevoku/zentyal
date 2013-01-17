@@ -23,7 +23,7 @@ use EBox;
 
 use EBox::Exceptions::Internal;
 use EBox::Gettext;
-use EBox::Types::Boolean;
+use EBox::Types::Select;
 use EBox::MailFilter::Types::AmavisSender;
 
 # Group: Public methods
