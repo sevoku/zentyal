@@ -45,6 +45,7 @@ $debug => 0
 # XXX TMP
 if (not  defined $dbCredentials) {
 $dbCredentials = {
+  database => 'amavis',
   host =>'127.0.0.1',
   port => 3306,
   user =>  'root',
@@ -779,7 +780,7 @@ $credentials
 # When chroot-ed, accessing SQL server over inet socket may be more convenient.
 #
  @lookup_sql_dsn = (
-      ['DBI:mysql:database=mail;host=<% $credentials->{host}%>;port=<% $credentials->{port}%>',
+      ['DBI:mysql:database=<% $credentials->{database} %>;host=<% $credentials->{host}%>;port=<% $credentials->{port}%>',
         '<% $credentials->{user} %>',
         '<% $credentials->{password} %>'
         ],
