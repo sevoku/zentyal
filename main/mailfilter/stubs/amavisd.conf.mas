@@ -780,8 +780,8 @@ $credentials
 #
  @lookup_sql_dsn = (
       ['DBI:mysql:database=mail;host=<% $credentials->{host}%>;port=<% $credentials->{port}%>',
-        <% $credentials->{user} %>,
-        <% $credentials->{password} %>
+        '<% $credentials->{user} %>',
+        '<% $credentials->{password} %>'
         ],
     );
 #
