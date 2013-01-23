@@ -179,7 +179,7 @@ sub menu
 
     my $item = new EBox::Menu::Item(text => $self->printableName(),
                                     url => 'MailFilter/MailFilterUI',
-                                    order => 100);
+                                    order => 1000);
     $folder->add($item);
     $root->add($folder);
 }

@@ -155,4 +155,20 @@ sub _changedPort
 
 }
 
+sub authSettings
+{
+    my ($self) = @_;
+    my $row = $self->row();
+    my $host = $row->valueByName('ldapHost');
+    $host or return undef;
+    my $port = $row->valueByName('ldapPort');
+    $port or return undef;
+    my $usersDn = $row->valueByName('usersDn');
+    return {
+        host => $host,
+        port => $port,
+        usersDn => $usersDn,
+       }
+}
+
 1;

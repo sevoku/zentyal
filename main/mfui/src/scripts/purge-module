@@ -1,5 +1,5 @@
 #!/bin/bash
 
-rm -rf /var/log/zentyal-usercorner/
+rm -rf /var/log/zentyal-mfui/
 
 exit 0
