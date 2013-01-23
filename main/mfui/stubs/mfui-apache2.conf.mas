@@ -185,4 +185,4 @@ RewriteRule ^/ebox.cgi$ /
 RewriteRule ^/data(.*) $1 [L]
 # From /dynamic-data/ to the right directory in FS and finish
 RewriteRule ^/dynamic-data(.*) /var/lib/zentyal/dynamicwww$1 [L]
-RewriteRule ^/(.*) /usr/share/zentyal/cgi/user-ebox.cgi [E=script:$1,L]
+RewriteRule ^/(.*) /usr/share/zentyal/cgi/mfui-ebox.cgi [E=script:$1,L]
