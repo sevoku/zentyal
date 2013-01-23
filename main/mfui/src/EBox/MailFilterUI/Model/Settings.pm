@@ -68,6 +68,7 @@ sub _table
             'fieldName' => 'usersDN',
             'printableName' => __('External LDAP users DN'),
             'editable' => 1,
+            'allowUnsafeChars' => 1,
         ),
     );
 
@@ -163,11 +164,11 @@ sub authSettings
     $host or return undef;
     my $port = $row->valueByName('ldapPort');
     $port or return undef;
-    my $usersDn = $row->valueByName('usersDn');
+    my $usersDN = $row->valueByName('usersDN');
     return {
         host => $host,
         port => $port,
-        usersDn => $usersDn,
+        usersDN => $usersDN,
        }
 }
 

@@ -1,4 +1,4 @@
-# Copyright (C) 2009-2012 eBox Technologies S.L.
+# Copyright (C) 2013 Zentyal S.L.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License, version 2, as
@@ -12,12 +12,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-
-package EBox::UserCorner::Auth;
-
 use strict;
 use warnings;
 
+package EBox::MailFilterUI::Auth;
 use base qw(EBox::ThirdParty::Apache2::AuthCookie);
 
 use EBox;
@@ -28,7 +26,7 @@ use EBox::Global;
 use EBox::Exceptions::Internal;
 use EBox::Exceptions::Lock;
 use EBox::Ldap;
-use EBox::UserCorner;
+use EBox::MailFilterUI;
 use Crypt::Rijndael;
 use Apache2::Connection;
 use Apache2::RequestUtil;
@@ -94,14 +92,14 @@ sub _savesession
     my $cryptedpass = $cipher->encrypt($passwd);
     my $encodedcryptedpass = MIME::Base64::encode($cryptedpass, '');
     my $sidFile;
-    my $filename = EBox::UserCorner::usersessiondir() . $user;
+    my $filename = EBox::MailFilterUI::usersessiondir() . $user;
     unless  ( open ( $sidFile, '>', $filename )){
         throw EBox::Exceptions::Internal(
                 "Could not open to write ".  $filename);
     }
     # Lock the file in exclusive mode
     flock($sidFile, LOCK_EX)
-        or throw EBox::Exceptions::Lock('EBox::UserCorner::Auth');
+        or throw EBox::Exceptions::Lock('EBox::MailFilterUI::Auth');
     # Truncate the file after locking
     truncate($sidFile, 0);
         print $sidFile $sid . "\t" . $encodedcryptedpass . "\t" . time if defined $sid;
@@ -117,13 +115,13 @@ sub _updatesession
     my ($user) = @_;
 
     my $sidFile;
-    my $sess_file = EBox::UserCorner::usersessiondir() . $user;
+    my $sess_file = EBox::MailFilterUI::usersessiondir() . $user;
     unless (open ($sidFile, '+<', $sess_file)) {
         throw EBox::Exceptions::Internal("Could not open $sess_file");
     }
     # Lock in exclusive
     flock($sidFile, LOCK_EX)
-        or throw EBox::Exceptions::Lock('EBox::UserCorner::Auth');
+        or throw EBox::Exceptions::Lock('EBox::MailFilterUI::Auth');
 
     my $sess_info = <$sidFile>;
     my ($sid, $cryptedpass, $lastime);
@@ -176,7 +174,7 @@ sub updatePassword
     my ($self, $user, $passwd) = @_;
     my $r = Apache2::RequestUtil->request();
 
-    my $session_info = EBox::UserCorner::Auth->key($r);
+    my $session_info = EBox::MailFilterUI::Auth->key($r);
     my $sid = substr($session_info, 0, 32);
     my $key = substr($session_info, 32, 32);
     _savesession($user, $passwd, $sid, $key);
@@ -191,7 +189,7 @@ sub authen_cred  # (request, user, password)
     my ($self, $r, $user, $passwd) = @_;
 
     unless ($self->checkPassword($user, $passwd)) {
-        EBox::initLogger('usercorner-log.conf');
+        EBox::initLogger('mfui-log.conf');
         my $log = EBox->logger();
         my $ip  = $r->connection->remote_host();
         $log->warn("Failed login from: $ip");
@@ -211,7 +209,7 @@ sub credentials
 
     my $user = $r->user();
 
-    my $session_info = EBox::UserCorner::Auth->key($r);
+    my $session_info = EBox::MailFilterUI::Auth->key($r);
     return _credentials($user, $session_info);
 }
 
@@ -224,13 +222,13 @@ sub _credentials
     my $cipher = Crypt::Rijndael->new($key, Crypt::Rijndael::MODE_CBC());
 
     my $SID_F;
-    my $sess_file  = EBox::UserCorner::usersessiondir() . $user;
+    my $sess_file  = EBox::MailFilterUI::usersessiondir() . $user;
     unless (open ($SID_F,  '<', $sess_file)) {
         throw EBox::Exceptions::Internal("Could not open $sess_file");
     }
     # Lock in shared mode for reading
     flock($SID_F, LOCK_SH)
-        or throw EBox::Exceptions::Lock('EBox::UserCorner::Auth');
+        or throw EBox::Exceptions::Lock('EBox::MailFilterUI::Auth');
 
     my $sess_info = <$SID_F>;
     my ($sid, $cryptedpass, $lastime);
@@ -262,14 +260,14 @@ sub authen_ses_key  # (request, session_key)
     my $user = undef;
     my $expired;
 
-    for my $sess_file (glob(EBox::UserCorner::usersessiondir() . '*')) {
+    for my $sess_file (glob(EBox::MailFilterUI::usersessiondir() . '*')) {
         unless (open ($SID_F,  '<', $sess_file)) {
             EBox::error("Could not open '$sess_file|'");
             next;
         }
         # Lock in shared mode for reading
         flock($SID_F, LOCK_SH)
-          or throw EBox::Exceptions::Lock('EBox::UserCorner::Auth');
+          or throw EBox::Exceptions::Lock('EBox::MailFilterUI::Auth');
 
         my $sess_info = <$SID_F>;
         my ($sid, $cryptedpass, $lastime);
@@ -293,7 +291,7 @@ sub authen_ses_key  # (request, session_key)
         return $user;
     } elsif (defined($user) and $expired) {
         $r->subprocess_env(LoginReason => "Expired");
-        unlink(EBox::UserCorner::usersessiondir() . $user);
+        unlink(EBox::MailFilterUI::usersessiondir() . $user);
     } else {
         $r->subprocess_env(LoginReason => "NotLoggedIn");
     }
@@ -319,7 +317,7 @@ sub logout # (request)
 {
     my ($self, $r) = @_;
 
-    my $filename = EBox::UserCorner::usersessiondir() . $r->user;
+    my $filename = EBox::MailFilterUI::usersessiondir() . $r->user;
     unlink($filename);
 
     $self->SUPER::logout($r);

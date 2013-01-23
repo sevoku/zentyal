@@ -1,2 +1,2 @@
-exec /usr/share/zentyal-usercorner/usercorner-apache2-start
+exec /usr/share/zentyal-mfui/mfui-apache2-start
 respawn

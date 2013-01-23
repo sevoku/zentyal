@@ -24,7 +24,7 @@ use POSIX qw(:signal_h setlocale LC_ALL LC_NUMERIC);
 try {
     use EBox::CGI::Run;
     use EBox;
-    EBox::initLogger('usercorner-log.conf');
+    EBox::initLogger('mfui-log.conf');
     POSIX::setlocale(LC_ALL, EBox::locale());
     POSIX::setlocale(LC_NUMERIC, 'C');
 
@@ -34,7 +34,7 @@ try {
     sigprocmask(SIG_UNBLOCK, $sigset);
 
     binmode(STDOUT, ':utf8');
-    EBox::CGI::Run->run($ENV{'script'}, 'EBox::UserCorner');
+    EBox::CGI::Run->run($ENV{'script'}, 'EBox::MailFilterUI');
 } otherwise  {
     my $ex = shift;
     use Devel::StackTrace;

@@ -126,9 +126,16 @@ sub enableActions
 #
 sub _daemons
 {
+    my ($self) = @_;
+    my $authConfCompleteSub = sub {
+        my $settings = $self->model('Settings');
+        return defined $settings->authSettings();
+    };
+
     return [
         {
-            'name' => 'zentyal.apache2-mfui'
+            'name' => 'zentyal.apache2-mfui',
+            'precondition' => $authConfCompleteSub,
         },
         # {
         #     'name' => 'zentyal.redis-mfui'
@@ -173,11 +180,11 @@ sub menu
 
     my $folder = new EBox::Menu::Folder(
                                         'name' => 'MailFilter',
-                                        'text' => $self->printableName(),
+                                        'text' => __('Mail Filter'),
                                         'separator' => 'Communications',
                                         'order' =>  615   );
 
-    my $item = new EBox::Menu::Item(text => $self->printableName(),
+    my $item = new EBox::Menu::Item(text => __('Web UI'),
                                     url => 'MailFilter/MailFilterUI',
                                     order => 1000);
     $folder->add($item);
