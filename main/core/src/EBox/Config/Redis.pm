@@ -521,9 +521,12 @@ sub _initRedis
 #
 sub writeConfigFile
 {
-    my ($self, $user) = @_;
-
+    my ($self, $user, %options) = @_;
     defined($user) or $user = EBox::Config::user();
+    my $port = $options{port};
+    if (not defined $port) {
+        $port = $self->_port($user);
+    }
 
     my $home = $self->_home($user);
 
@@ -532,7 +535,6 @@ sub writeConfigFile
     my $uid = getpwnam($user);
     my $dir = $user;
     $dir =~ s/ebox/zentyal/;
-    my $port = $self->_port($user);
 
     my @params = ();
     push (@params, user => $user);

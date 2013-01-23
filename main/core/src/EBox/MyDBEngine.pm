@@ -731,7 +731,7 @@ sub sqlAsSuperuser
     }
 
     my $dbname = $self->_dbname();
-    $self->commandAsSuperuser("mysql --defaults-file=/etc/mysql/debian.cnf $dbname < $file");
+    return $self->commandAsSuperuser("mysql --defaults-file=/etc/mysql/debian.cnf $dbname < $file");
 }
 
 # Method: commandAsSuperuser
@@ -743,7 +743,7 @@ sub commandAsSuperuser
     defined $cmd or
         throw EBox::Exceptions::MissingArgument('command');
 
-    EBox::Sudo::root($cmd);
+    return EBox::Sudo::root($cmd);
 }
 
 sub _superuserTmpFile

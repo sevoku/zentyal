@@ -1,4 +1,6 @@
 HEAD
+	+ Added option to give an explicit port when generating
+	  redis config
 	+ Fix input badly hidden in the logs screen
 	+ reloadTable from DataTable now remove cached fields as well
 3.0.10
