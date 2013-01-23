@@ -60,8 +60,11 @@ sub _new
 
     unless ($lock) {
         my $path = undef;
-        if ($self->_user() eq 'ebox-usercorner') {
+        my $user = $self->_user();
+        if ($user eq 'ebox-usercorner') {
             $path = '/run/shm/zentyal-usercorner';
+        } elsif ($user =~ m/^zentyal\-/) {
+            $path = "/run/shm/$user";
         }
         $lock = EBox::Util::SHMLock->init('redis', $path);
     }
