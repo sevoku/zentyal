@@ -1,0 +1,2 @@
+exec sudo -u zentyal-mfui /usr/bin/redis-server /var/lib/zentyal-mfui/conf/redis.conf
+respawn

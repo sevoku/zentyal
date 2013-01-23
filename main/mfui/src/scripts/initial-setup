@@ -22,13 +22,13 @@ test -d /var/lib/zentyal-mfui/sids/ || mkdir -p /var/lib/zentyal-mfui/sids/
 chown -R zentyal-mfui:zentyal-mfui /var/lib/zentyal-mfui
 
 # Setup random redis password
-#REDIS_PASS="/var/lib/zentyal-mfui/conf/redis.passwd"
-#if [ ! -f $REDIS_PASS ]; then
-#    touch $REDIS_PASS
-#    chmod 0660 $REDIS_PASS
-#    tr -dc A-Za-z0-9 < /dev/urandom | head -c10 > $REDIS_PASS
-#fi
-#chown zentyal-mfui:ebox $REDIS_PASS
+REDIS_PASS="/var/lib/zentyal-mfui/conf/redis.passwd"
+if [ ! -f $REDIS_PASS ]; then
+   touch $REDIS_PASS
+   chmod 0660 $REDIS_PASS
+   tr -dc A-Za-z0-9 < /dev/urandom | head -c10 > $REDIS_PASS
+fi
+chown zentyal-mfui:ebox $REDIS_PASS
 
 # create zentyal mfui apache certificates
 /usr/share/zentyal/create-certificate /var/lib/zentyal-mfui/ssl > /dev/null 2>&1 || true

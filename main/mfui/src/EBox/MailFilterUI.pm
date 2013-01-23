@@ -137,9 +137,9 @@ sub _daemons
             'name' => 'zentyal.apache2-mfui',
             'precondition' => $authConfCompleteSub,
         },
-        # {
-        #     'name' => 'zentyal.redis-mfui'
-        # }
+        {
+            'name' => 'zentyal.redis-mfui'
+        }
     ];
 }
 
@@ -160,10 +160,9 @@ sub _setConf
         [ port => $settings->portValue() ],
     );
 
-    # # Write user corner redis file
-    # $self->{redis}->writeConfigFile(MFUI_USER);
-
-
+    # # Write mfui corner redis file
+    my $redisPort =  EBox::Config::configkey('redis_port_mfui');
+    $self->{redis}->writeConfigFile(MFUI_USER, port => $redisPort);
 }
 
 # Method: menu
