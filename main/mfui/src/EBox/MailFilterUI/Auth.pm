@@ -44,10 +44,13 @@ use constant MAX_SCRIPT_SESSION => 10; # In seconds
 
 sub new
 {
-        my $class = shift;
-        my $self = {};
-        bless($self, $class);
-        return $self;
+    my $class = shift;
+    my $self = {};
+    bless($self, $class);
+
+    $self->{mfui} = EBox::Global->getInstance(1)->modInstance('mfui');
+    $self->{authSettings}  = $self->{mfui}->authSettings();
+    return $self;
 }
 
 # Parameters:
@@ -156,10 +159,37 @@ sub _updatesession
 sub checkPassword # (user, password)
 {
     my ($self, $user, $passwd) = @_;
+    return 1; # DDD always identified
 
-    my $users = EBox::Global->modInstance('users');
-    return $users->authUser($user, $passwd);
+    if (not defined $self->{authSettings}) {
+        # no authentication possible
+        return 0;
+    }
+
+    my $url = $self->{authSettings}->{url};
+    my $dn = $self->{authSettings}->{bind};
+    return $self->_checkLdapPassword($user, $passwd, $url, $dn);
 }
+
+sub _checkLdapPassword
+{
+    my ($self, $user, $password, $url, $bind) = @_;
+
+    # replace usrename in bind string
+    $bind =~ s/{USERNAME}/$user/g;
+    my $authorized = 0;
+    try {
+        my $ldap = EBox::Ldap::safeConnect($url);
+        EBox::Ldap::safeBind($ldap, $bind, $password);
+        $authorized = 1; # auth ok
+    } otherwise {
+        $authorized = 0; # auth failed
+    };
+
+    return $authorized;
+}
+
+
 
 # Method: updatePassword
 #
