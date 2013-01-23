@@ -160,7 +160,7 @@ sub _serviceRules
     ];
 }
 
-# Method: enableActions
+# Method: enableService
 #
 #       Override EBox::Module::Service::enableService
 #

@@ -19,6 +19,22 @@ use warnings;
 package EBox::MailFilter::Amavis::DBEngine;
 use base 'EBox::MyDBEngine';
 
+my $DB_USER     = 'amavisdb';
+my $DB_PWD_FILE = '/var/lib/zentyal/conf/amavis-db.passwd';
+
+sub new
+{
+    my $class = shift,
+    my $self = {};
+    bless($self,$class);
+
+    $self->_connect();
+    # compatibilty  fudge:
+    $self->{logs} = EBox::Global->getInstance(1)->modInstance('logs');
+
+    return $self;
+}
+
 sub _dbname
 {
     return 'amavis';
@@ -26,13 +42,30 @@ sub _dbname
 
 sub _dbuser
 {
-    return 'root'
+    return $DB_USER;
 }
 
 sub _dbpass
 {
-    return 'H9YYU88o';
+    my ($self) = @_;
+    unless ($self->{dbpass}) {
+        my ($pass) = @{EBox::Sudo::root("/bin/cat $DB_PWD_FILE")};
+        $self->{dbpass} = $pass;
+    }
+
+    return $self->{dbpass};
 }
-# overload _dbuser and _dbpass
+
+sub credentials
+{
+    my ($self) = @_;
+    return {
+        database => $self->_dbname(),
+        host =>'127.0.0.1',
+        port => 3306,
+        user =>  $self->_dbuser(),
+        password => $self->_dbpass(),
+       };
+}
 
 1;

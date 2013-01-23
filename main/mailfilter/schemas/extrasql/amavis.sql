@@ -213,3 +213,13 @@ CREATE TABLE IF NOT EXISTS quarantine (
 --   'p' => pending (a status given to messages when the admin received the
 --                   request but not yet released; targeted to banned parts)
 --   'D' => marked for deletion; a cleanup script may delete it
+
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON users TO amavis;
+GRANT SELECT, INSERT, UPDATE, DELETE ON mailaddr TO amavis;
+GRANT SELECT, INSERT, UPDATE, DELETE ON wblist TO amavis;
+GRANT SELECT, INSERT, UPDATE, DELETE ON policy TO amavis;
+GRANT SELECT, INSERT, UPDATE, DELETE ON maddr TO amavis;
+GRANT SELECT, INSERT, UPDATE, DELETE ON msgs TO amavis;
+GRANT SELECT, INSERT, UPDATE, DELETE ON msgrcpt TO amavis;
+GRANT SELECT, INSERT, UPDATE, DELETE ON quarantine TO amavis;

@@ -13,7 +13,7 @@ $ldapQueryFilter
 $ldapBindDn
 $ldapBindPasswd
 
-$dbCredentials => undef
+$dbCredentials
 
 $antivirusActive => 1
 $clamdSocket   => undef
@@ -41,19 +41,6 @@ $adminAddress
 
 $debug => 0
 </%args>
-<%init>
-# XXX TMP
-if (not  defined $dbCredentials) {
-$dbCredentials = {
-  database => 'amavis',
-  host =>'127.0.0.1',
-  port => 3306,
-  user =>  'root',
-  password => 'H9YYU88o'
-
-};
-}
-</%init>
 use strict;
 use warnings;
 

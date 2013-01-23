@@ -1,1 +1,2 @@
 spamassassin.sql /usr/share/zentyal-mailfilter
+amavis.sql /usr/share/zentyal-mailfilter

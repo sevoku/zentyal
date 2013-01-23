@@ -42,9 +42,8 @@ use constant {
   AMAVISPIDFILE                 => '/var/run/amavis/amavisd.pid',
                                    # which this modules provides
   MAILFILTER_NAME => 'mailfilter', # name used to identify the filter
-                                   # which mavis provides
+                                   # which amavis provides
 };
-
 
 sub new
 {
@@ -55,7 +54,6 @@ sub new
 
     return $self;
 }
-
 
 sub usedFiles
 {
@@ -132,6 +130,8 @@ sub writeConf
     my $spamThreshold  = $antispam->spamThreshold();
     my $spamSubject    =  $antispam->spamSubjectTag();
 
+    my $dbEngine = $self->dbEngine();
+
     my @masonParams;
     push @masonParams, (myhostname => $self->_fqdn());
     push @masonParams, (mydomain => $self->_domain());
@@ -145,6 +145,8 @@ sub writeConf
     push @masonParams, (ldapQueryFilter  =>  '(&(objectClass=amavisAccount)(|(mail=%m)(domainMailPortion=%m)))');
     push @masonParams, (ldapBindDn       =>  $ldap->rootDn );
     push @masonParams, (ldapBindPasswd   =>  $ldap->getPassword());
+
+    push @masonParams, (dbCredentials => $dbEngine->credentials());
 
     push @masonParams, (antivirusActive  => $antivirusActive);
     push @masonParams, (virusPolicy      => $self->filterPolicy('virus'));
@@ -180,7 +182,6 @@ sub writeConf
     EBox::Module::Base::writeConfFileNoCheck(AMAVIS_CONF_FILE, '/mailfilter/amavisd.conf.mas', \@masonParams, $fileAttrs);
 
     # set default policy in sql for external users
-    my $dbEngine = $self->dbEngine();
     $self->_setSqlPolicy($dbEngine, 'default policy',  {
         bypass_spam_checks => $antispamActive ? "'Y'" : "'N'",
         bypass_virus_checks => $antivirusActive ? "'Y'" : "'N'",
@@ -202,9 +203,6 @@ sub _setSqlPolicy
     my $res = $dbEngine->query($selectId);
     if (@{ $res }) {
         my $id = $res->[0]->{id};
-        print "ALREADY exists ID $id\n";
-        use Data::Dumper;
-        print Dumper($values);
         $dbEngine->update($table, $values, ["id=$id"]);
     } else {
         # create a new one
