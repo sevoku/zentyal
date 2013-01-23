@@ -1,0 +1,17 @@
+/var/log/zentyal-mfui/error.log /var/log/zentyal-mfui/access.log /var/log/zentyal-mfui/zentyal.log /var/log/zentyal-mfui/redis-server.log
+{
+        rotate 7
+        size 10M
+        compress
+        nocreate
+        missingok
+        delaycompress
+        notifempty
+        postrotate
+                if [ -x /usr/sbin/invoke-rc.d ]; then \
+                        invoke-rc.d zentyal mfui restart > /dev/null; \
+                else \
+                        /etc/init.d/zentyal mfui restart > /dev/null; \
+                fi; \
+        endscript
+}

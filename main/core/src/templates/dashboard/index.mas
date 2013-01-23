@@ -150,13 +150,13 @@ function closeNotification() {
 <div class='dashboard' id="dashboard1">
 <br/>
 % foreach my $widget (@dashboard1) {
-    <& dashboard/widget.mas, widget => $widget, toggled => \%toggled &>
+    <& /dashboard/widget.mas, widget => $widget, toggled => \%toggled &>
 % }
 </div>
 <div class='dashboard' id="dashboard2">
 <br/>
 % foreach my $widget (@dashboard2) {
-    <& dashboard/widget.mas, widget => $widget, toggled => \%toggled &>
+    <& /dashboard/widget.mas, widget => $widget, toggled => \%toggled &>
 % }
 </div>
 <script type="text/javascript">

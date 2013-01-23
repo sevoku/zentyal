@@ -1,0 +1,7 @@
+class: 'EBox::MailFilterUI'
+depends:
+    - users
+    - maifilter
+    - webserver
+models:
+    - Settings

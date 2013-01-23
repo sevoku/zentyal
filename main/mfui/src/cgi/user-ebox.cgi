@@ -19,20 +19,22 @@ use warnings;
 
 use EBox::Gettext;
 use Error qw(:try);
-use POSIX qw(:signal_h);
+use POSIX qw(:signal_h setlocale LC_ALL LC_NUMERIC);
 
 try {
     use EBox::CGI::Run;
     use EBox;
+    EBox::initLogger('usercorner-log.conf');
+    POSIX::setlocale(LC_ALL, EBox::locale());
+    POSIX::setlocale(LC_NUMERIC, 'C');
 
     # Workaround to clear Apache2's process mask
     my $sigset = POSIX::SigSet->new();
     $sigset->fillset();
     sigprocmask(SIG_UNBLOCK, $sigset);
 
-    EBox::init();
     binmode(STDOUT, ':utf8');
-    EBox::CGI::Run->run($ENV{'script'}, 'EBox');
+    EBox::CGI::Run->run($ENV{'script'}, 'EBox::UserCorner');
 } otherwise  {
     my $ex = shift;
     use Devel::StackTrace;
@@ -68,22 +70,9 @@ try {
     $params->{actions} = __('Actions');
     $params->{go_back} = __('Go back');
     $params->{title} = __('Sorry, an unexpected error has occurred');
-
-    my @brokenPackages = @{ _brokenPackages() };
     if ($theme->{hide_bug_report}) {
         $params->{title} .= '. ' . __('Please contact support.');
-        $params->{brokenPackages} = '';
-        if (@brokenPackages) {
-            $params->{brokenPackages} = __x('The following software packages are not correctly installed: {pack}',
-                                            pack => join ', ', @brokenPackages);
-        }
         $templateFile = 'cgiErrorNoReport.html';
-    } elsif (@brokenPackages) {
-        $params->{show_details} = __('Show technical details');
-        $params->{main_text} = __x('There are some software packages which are not correctly installed: {pack}. <p>You should reinstall them and retry your operation.</p>',
-                                    pack => join ', ', @brokenPackages
-                                    );
-        $templateFile = 'cgiErrorBrokenPackages.html';
     } else {
         $params->{show_details} = __('Show technical details');
         $params->{report} = __('Report the problem');
@@ -128,23 +117,9 @@ try {
     my $html = read_file(EBox::Config::templates . $templateFile);
     foreach my $key (%{$params}) {
         my $value = $params->{$key};
-        $html =~ s/\Q{{ $key }}\E/$value/g;
+        $html =~ s/{{ $key }}/$value/g;
     }
-
-
     print $html;
+
+    print end_html;
 };
-
-sub _brokenPackages
-{
-    my @pkgs;
-    my @output = `dpkg -l | grep -i ^i[fFHh]`;
-    foreach my $line (@output) {
-        my ($status, $name, $other) = split '\s+', $line, 3;
-        push @pkgs, $name;
-    }
-
-    return \@pkgs;
-}
-
-1;

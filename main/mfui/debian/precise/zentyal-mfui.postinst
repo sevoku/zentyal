@@ -1,0 +1,21 @@
+#!/bin/bash
+
+set -e
+
+case "$1" in
+    configure)
+
+        /usr/share/zentyal/initial-setup mfui $2
+
+        dpkg-trigger --no-await zentyal-core
+    ;;
+    triggered)
+        #remove the mfui menu cache
+        rm -f /var/lib/zentyal-mfui/menucache || true
+
+        #restart the mfui apache
+        invoke-rc.d zentyal mfui restart || true
+    ;;
+esac
+
+exit 0
