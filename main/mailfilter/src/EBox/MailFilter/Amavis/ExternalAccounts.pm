@@ -50,7 +50,7 @@ sub WBListForRID
 #NT
 sub getWBList
 {
-    my ($self, $sid, $rid) = @_;
+    my ($self, $rid, $sid) = @_;
     my $selectSQL = "SELECT wb FROM wblist WHERE rid=$rid AND sid=$sid";
     my $res = $self->{dbengine}->query($selectSQL);
     if (@{ $res }) {

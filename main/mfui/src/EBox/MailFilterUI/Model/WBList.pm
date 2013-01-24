@@ -157,7 +157,7 @@ sub removeRow
     }
 
     my ($rid, $sid) = split 'S', $id, 2;
-    $self->{externalAccounts}->removeBWListByID($rid, $sid);
+    $self->{externalAccounts}->removeWBListByID($rid, $sid);
     $self->setMessage(__('Sender policy removed') );
 }
 
@@ -189,6 +189,16 @@ sub _user
     my $r = Apache2::RequestUtil->request;
     my $user = $r->user;
     return $user;
+}
+
+# Method: _checkRowExist
+#
+#   Override <EBox::Model::DataTable::_checkRowExist> as DataTable try to check
+#   if a row exists checking the existance of the conf directory
+sub _checkRowExist
+{
+    my ($self, $id) = @_;
+    return 1;
 }
 
 1;
