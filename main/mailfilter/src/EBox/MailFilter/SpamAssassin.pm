@@ -81,12 +81,6 @@ sub _confAttr
     return $self->{configuration}->$attr();
 }
 
-sub _scores
-{
-    my $mailfilter = EBox::Global->modInstance('mailfilter');
-    return $mailfilter->model('AntispamRules')->scores();
-}
-
 sub _manageServices
 {
     my ($self, $action) = @_;
@@ -186,7 +180,7 @@ sub writeConf
 
     my ($password) = @{EBox::Sudo::root('/bin/cat ' . SA_PASSWD_FILE)};
     push @confParams, (password => $password);
-    push @confParams, (scores => $self->_scores());
+    push @confParams, (scores => {});
 
     EBox::Module::Base::writeConfFileNoCheck(SA_CONF_FILE, "mailfilter/local.cf.mas", \@confParams);
 

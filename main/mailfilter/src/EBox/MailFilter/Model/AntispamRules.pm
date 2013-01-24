@@ -79,15 +79,7 @@ sub _table
 sub scores
 {
     my ($self) = @_;
-    my %scores;
-    my $row = $self->row();
-    my @elements = @{ $row->elements() };
-    foreach my $element (@elements) {
-        if ($element->isa('EBox::MailFilter::Types::AntispamThreshold')) {
-            $scores{$element->fieldName()} = $element->value();
-        }
-    }
-    return \%scores;
+    return {};
 }
 
 1;
