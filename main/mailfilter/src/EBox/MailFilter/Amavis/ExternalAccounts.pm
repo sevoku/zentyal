@@ -171,7 +171,7 @@ sub addAccount
     $self->{dbengine}->unbufferedInsert('users', {
            email => $account,
            fullname => $fullname,
-           local    => 'N', # only external accounts managed for now
+           local    => 'Y',
        });
 }
 
