@@ -51,14 +51,16 @@ use constant MAX_SCRIPT_SESSION => 10; # In seconds
 #
 #   - user name
 #   - password
+#   - mail: user mail
 #   - session id: if the id is undef, it creates a new one
 #   - key: key for rijndael, if sid is undef creates a new one
+
 # Exceptions:
 #       - Internal
 #               - When session file cannot be opened to write
 sub _savesession
 {
-    my ($user, $passwd, $sid, $key) = @_;
+    my ($user, $passwd, $mail, $sid, $key) = @_;
 
     if(not defined($sid)) {
         my $rndStr;
@@ -100,7 +102,7 @@ sub _savesession
     # Truncate the file after locking
     truncate($sidFile, 0);
     if (defined $sid) {
-       my $cookie = join("\t", $sid, $encodedcryptedpass, time());
+       my $cookie = join("\t", $sid, $encodedcryptedpass, time(), $mail);
        print $sidFile $cookie;
     }
     # Release the lock
@@ -124,22 +126,25 @@ sub _updatesession
         or throw EBox::Exceptions::Lock('EBox::MailFilterUI::Auth');
 
     my $sess_info = <$sidFile>;
-    my ($sid, $cryptedpass, $lastime);
-    ($sid, $cryptedpass, $lastime) = split (/\t/, $sess_info) if defined $sess_info;
+    my ($sid, $cryptedpass, $lastime, $mail);
+    if (defined $sess_info) {
+        ($sid, $cryptedpass, $lastime, $mail) = split (/\t/, $sess_info)
+     }
 
     # Truncate the file
     truncate($sidFile, 0);
     seek($sidFile, 0, 0);
-    print $sidFile $sid . "\t" . $cryptedpass . "\t" . time if defined $sid;
+    if (defined $sid) {
+       my $cookie = join("\t", $sid, $cryptedpass, time(), $mail);
+       print $sidFile $cookie;
+    }
     # Release the lock
     flock($sidFile, LOCK_UN);
     close($sidFile);
 }
 
 
-# Method: checkPassword
-#
-#
+# Method: checkPasswordAndGetMail
 #
 # Parameters:
 #
@@ -181,6 +186,9 @@ sub checkPasswordAndGetMail # (user, password)
          'filter' => '(objectclass=*)',
          'attrs' => ['defaultNamingContext']
      );
+    if ($result->count ==0 ) {
+        return undef;
+    }
     my $entry = ($result->entries)[0];
     my $baseDN = $entry->get_value('defaultNamingContext');
 
@@ -191,6 +199,9 @@ sub checkPasswordAndGetMail # (user, password)
         scope => 'sub',
         attrs => ['mail'],
        );
+    if ($result->count ==0 ) {
+        return undef;
+    }
     $entry =  ($result->entries)[0];
 
     # get mail
@@ -229,9 +240,10 @@ sub updatePassword
     my $r = Apache2::RequestUtil->request();
 
     my $session_info = EBox::MailFilterUI::Auth->key($r);
-    my $sid = substr($session_info, 0, 32);
-    my $key = substr($session_info, 32, 32);
-    _savesession($user, $passwd, $sid, $key);
+    my ($sid, $key, $time, $mail) = split '\t', $session_info;
+#    my $sid = substr($session_info, 0, 32);
+#    my $key = substr($session_info, 32, 32);
+    _savesession($user, $passwd, $mail, $sid, $key);
 }
 
 # Method: authen_cred
@@ -251,7 +263,7 @@ sub authen_cred  # (request, user, password)
         return;
     }
 
-    return _savesession($user, $passwd, undef, undef);
+    return _savesession($user, $passwd, $mail, undef, undef);
 }
 
 # Method: credentials
