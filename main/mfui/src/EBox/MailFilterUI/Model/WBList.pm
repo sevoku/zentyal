@@ -25,6 +25,7 @@ use EBox::::Types::Select;
 
 use EBox::MailFilterUI::DBEngine;
 use EBox::MailFilter::Amavis::ExternalAccounts;
+use EBox::MailFilterUI::Auth;
 
 use Apache2::RequestUtil;
 use File::Temp qw/tempfile/;
@@ -169,16 +170,20 @@ sub removeRow
 sub _userEmail
 {
     my ($self, $returnId) = @_;
-    my $user = $self->_user();
 
-    # DDD
-    my $email =  $user . '@pipo.com';
-    if (not $self->{externalAccounts}->_accountId($email)) {
+    my $user = $self->_user();
+    my $sessionFile = EBox::MailFilterUI::usersessiondir() . $user;
+    my $sessionKey = `cat '$sessionFile'`;
+    if ($? != 0) {
+       throw EBox::Exceptions::Internal('Error getting user session info');
+    }
+    my ($sid, $key, $time, $mail) = split '\t', $sessionKey;
+    if (not $self->{externalAccounts}->_accountId($mail)) {
         # add user to table if not exists
-        $self->{externalAccounts}->addAccount($email, $user);
+        $self->{externalAccounts}->addAccount($mail, $user);
     }
 
-    return $email;
+    return $mail;
 }
 
 sub _rid
