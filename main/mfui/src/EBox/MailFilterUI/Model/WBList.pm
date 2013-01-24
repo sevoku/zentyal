@@ -135,6 +135,10 @@ sub setTypedRow
     my $sender = $paramsRef->{sender}->value();
     my $policy = $paramsRef->{policy}->value();
     my $rcpt = $self->_userEmail();
+
+    my ($rid, $sid) = split 'S', $id, 2;
+    $self->{externalAccounts}->removeWBListByID($rid, $sid);
+
     $self->{externalAccounts}->setWBList($rcpt, $sender, $policy);
     # return id?
     $self->setMessage(__('Sender policy modified') );
