@@ -62,6 +62,8 @@ sub title
 sub menu
 {
     my ($self, $current) = @_;
+    # XXX disabled unti lwe have more sections
+    return;
 
     my $root = EBox::MailFilterUI::Menu::menu($current);
     return $root->html;

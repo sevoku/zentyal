@@ -30,6 +30,7 @@ use constant MFUI_GROUP => 'zentyal-mfui';
 use constant MFUI_APACHE => EBox::Config->conf() . '/mfui-apache2.conf';
 use constant MFUI_REDIS => '/var/lib/zentyal-mfui/conf/redis.conf';
 use constant MFUI_REDIS_PASS => '/var/lib/zentyal-mfui/conf/redis.passwd';
+use constant LDAP_CONF => '/var/lib/zentyal-mfui/ldap.conf';
 
 sub _create
 {
@@ -167,12 +168,18 @@ sub _setConf
         [ port => $settings->portValue() ],
     );
 
-    # # Write mfui corner redis file
+    #  Write mfui corner redis file
     my $redisPort =  EBox::Config::configkey('redis_port_mfui');
     $self->{redis}->writeConfigFile(MFUI_USER, port => $redisPort);
 
     # Setup DB password file
     EBox::MailFilterUI::DBEngine->setupDBPassFile();
+
+    # Setup LDAP auth conf file
+    EBox::Module::Base::writeConfFileNoCheck(LDAP_CONF,
+        "mfui/ldap.conf.mas",
+        [auth => $self->authSettings()]
+       );
 }
 
 # Method: menu

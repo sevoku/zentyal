@@ -31,12 +31,14 @@ use Crypt::Rijndael;
 use Apache2::Connection;
 use Apache2::RequestUtil;
 use Apache2::Const qw(:common HTTP_FORBIDDEN HTTP_MOVED_TEMPORARILY);
+use EBox::MailFilterUI;
 use EBox::MailFilterUI::DBEngine;
 
 use MIME::Base64;
 use Digest::MD5;
 use Fcntl qw(:flock);
 use File::Basename;
+use Error qw(:try);
 
 # By now, the expiration time for session is hardcoded here
 use constant EXPIRE => 3600; #In seconds  1h
@@ -160,7 +162,18 @@ sub checkPassword # (user, password)
 #
 #    my $url = $mfuiState{authSettings}->{url};
 #    my $dn = $mfuiState{authSettings}->{bind};
+    my $CONF_FILE = EBox::MailFilterUI->LDAP_CONF;
+
      my ($url, $dn);
+     try {
+       $url = EBox::Config::configkeyFromFile('ldap_url', $CONF_FILE);
+     } otherwise {};
+
+     if (not $url) {
+      # no auth possible
+      return 0;
+    }
+
     if ($class->_checkLdapPassword($user, $passwd, $url, $dn)) {
         $class->_userSetup($user);
         return 1;
@@ -174,11 +187,14 @@ sub _checkLdapPassword
     my ($class, $user, $password, $url, $bind) = @_;
     return 1; # DDD always identified
     # replace usrename in bind string
-    $bind =~ s/{USERNAME}/$user/g;
+#    $bind =~ s/{USERNAME}/$user/g;
+     defined $bind or
+       $bind = $user;
     my $authorized = 0;
     try {
         my $ldap = EBox::Ldap::safeConnect($url);
         EBox::Ldap::safeBind($ldap, $bind, $password);
+
         $authorized = 1; # auth ok
     } otherwise {
         $authorized = 0; # auth failed
