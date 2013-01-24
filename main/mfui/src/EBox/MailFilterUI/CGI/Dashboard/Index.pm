@@ -26,7 +26,7 @@ sub new # (error=?, msg=?, cgi=?)
 {
     my $class = shift;
     my $self = $class->SUPER::new(@_, title => __('User'));
-    $self->{redirect} = "Users/View/Password";
+    $self->{redirect} = "mfui/View/WBList";
     bless($self, $class);
     return $self;
 }

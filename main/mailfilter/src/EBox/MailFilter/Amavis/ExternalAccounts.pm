@@ -12,22 +12,51 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-
 use strict;
 use warnings;
 
 package EBox::MailFilter::Amavis::ExternalAccounts;
-use EBox::MailFilter::Amavis::DBEngine;
+
+use EBox::Exceptions::MissingArgument;
 
 sub new
 {
-    my $class = shift @_;
+    my ($class, %params) = @_;
+
     my $self = {};
     bless($self,$class);
 
-    $self->{dbengine} =  EBox::MailFilter::Amavis::DBEngine->new();
+    if ($params{dbengine}) {
+        $self->{dbengine} = $params{dbengine};
+    } else {
+        throw EBox::Exceptions::MissingArgument('dbengine');
+    }
 
     return $self;
+}
+
+#NT
+sub WBListForRID
+{
+    my ($self, $rid) = @_;
+    my $selectSQL = "SELECT sid FROM wblist WHERE rid=$rid";
+    my $res = $self->{dbengine}->query($selectSQL);
+    my @list = map {
+        [$rid, $_->{sid}]
+    } @{ $res };
+    return \@list;
+}
+
+#NT
+sub getWBList
+{
+    my ($self, $sid, $rid) = @_;
+    my $selectSQL = "SELECT wb FROM wblist WHERE rid=$rid AND sid=$sid";
+    my $res = $self->{dbengine}->query($selectSQL);
+    if (@{ $res }) {
+        return $res->[0]->{wb};
+    }
+    return undef;
 }
 
 sub setWBList
@@ -63,8 +92,11 @@ sub setWBList
             wb => $type
            });
     }
+
+    return [$rid => $sid];
 }
 
+# NY
 sub removeWBList
 {
     my ($self, $account, $email) = @_;
@@ -73,10 +105,15 @@ sub removeWBList
     if (not $emailId) {
         throw EBox::Exceptions::Internal("No id for mail address $email");
     }
-    $self->{dbengine}->delete('wblist', ["rid=$accountId", "sid=$emailId"]);
+    $self->removeWBListByID($accountId, $emailId);
+}
 
-
-    $self->_removeMailaddrIfNotUsed($emailId);
+# NT
+sub removeWBListByID
+{
+    my ($self, $rid, $sid) = @_;
+    $self->{dbengine}->delete('wblist', ["rid=$rid", "sid=$sid"]);
+    $self->_removeMailaddrIfNotUsed($sid);
 }
 
 sub removeAccount
@@ -85,11 +122,22 @@ sub removeAccount
     my $id = $self->_accountMustExist($account);
     $self->{dbengine}->delete('users', ["email='$account'"]);
 
-    $self->_cleanAccountWblist($id);
-
+    $self->_cleanAccountWBList($id);
 }
 
-sub _cleanAccountWblist
+#NT
+sub mailaddrById
+{
+    my ($self, $id) = @_;
+    my $sql = "SELECT email FROM mailaddr WHERE id=$id LIMIT 1";
+    my $res = $self->{dbengine}->query($sql);
+    if (@{$res}) {
+        return $res->[0]->{email}
+    }
+    return undef;
+}
+
+sub _cleanAccountWBList
 {
     my ($self, $rid) = @_;
     my %suspectedSids;

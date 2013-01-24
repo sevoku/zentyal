@@ -49,11 +49,16 @@ sub _dbpass
 {
     my ($self) = @_;
     unless ($self->{dbpass}) {
-        my ($pass) = @{EBox::Sudo::root("/bin/cat $DB_PWD_FILE")};
+        my ($pass) = @{EBox::Sudo::root('/bin/cat ' . $self->_dbpassFile())};
         $self->{dbpass} = $pass;
     }
 
     return $self->{dbpass};
+}
+
+sub _dbpassFile
+{
+    return $DB_PWD_FILE;
 }
 
 sub credentials

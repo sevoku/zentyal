@@ -22,6 +22,7 @@ use EBox::Config;
 use EBox::Gettext;
 use EBox::Global;
 use EBox::Menu::Root;
+use EBox::MailFilterUI::DBEngine;
 
 
 use constant MFUI_USER  => 'zentyal-mfui';
@@ -128,8 +129,7 @@ sub _daemons
 {
     my ($self) = @_;
     my $authConfCompleteSub = sub {
-        my $settings = $self->model('Settings');
-        return defined $settings->authSettings();
+        return defined $self->authSettings();
     };
 
     return [
@@ -141,6 +141,13 @@ sub _daemons
             'name' => 'zentyal.redis-mfui'
         }
     ];
+}
+
+sub authSettings
+{
+    my ($self) = @_;
+    my $settings = $self->model('Settings');
+    return $settings->authSettings();
 }
 
 # Method: _setConf
@@ -163,6 +170,9 @@ sub _setConf
     # # Write mfui corner redis file
     my $redisPort =  EBox::Config::configkey('redis_port_mfui');
     $self->{redis}->writeConfigFile(MFUI_USER, port => $redisPort);
+
+    # Setup DB password file
+    EBox::MailFilterUI::DBEngine->setupDBPassFile();
 }
 
 # Method: menu
