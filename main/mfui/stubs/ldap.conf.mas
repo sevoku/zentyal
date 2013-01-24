@@ -1,0 +1,7 @@
+<%args>
+    %auth
+</%args>
+
+# LDAP connection URL
+ldap_url = <% $auth{host} %>
+
