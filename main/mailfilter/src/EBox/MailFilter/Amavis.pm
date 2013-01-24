@@ -183,8 +183,8 @@ sub writeConf
 
     # set default policy in sql for external users
     $self->_setSqlPolicy($dbEngine, 'default policy',  {
-        bypass_spam_checks => $antispamActive ? "'Y'" : "'N'",
-        bypass_virus_checks => $antivirusActive ? "'Y'" : "'N'",
+        bypass_spam_checks => $antispamActive ? "'N'" : "'Y'",
+        bypass_virus_checks => $antivirusActive ? "'N'" : "'Y'",
 
         spam_modifies_subj => $spamSubject ? "'Y'" : "'N'",
         spam_tag2_level  => $spamThreshold,
