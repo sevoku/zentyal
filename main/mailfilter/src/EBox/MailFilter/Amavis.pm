@@ -311,6 +311,12 @@ sub _localDomains
     my @vdomains =   EBox::MailVDomainsLdap->new->vdomains();
     push @vdomains, @{ $self->externalDomains() };
 
+    my $mail = EBox::Global->modInstance('mail');
+    if ($mail) {
+        my %relayDomains = %{ $mail->model('RelayDomains')->domains()  };
+        push @vdomains, keys %relayDomains;
+    }
+
     return [@vdomains];
 }
 
