@@ -303,10 +303,13 @@ sub _entry
         }
         return undef unless defined $result;
 
-        if ($result->count() > 1) {
+        my $count = $result->count();
+        if ($count == 0) {
+            return undef;
+        } elsif ($count > 1) {
             throw EBox::Exceptions::Internal(
                 __x('Found {count} results for, expected only one.',
-                    count => $result->count()));
+                    count => $count));
         }
 
         $self->{entry} = $result->entry(0);
