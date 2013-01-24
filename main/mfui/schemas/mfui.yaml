@@ -1,6 +1,7 @@
 class: 'EBox::MailFilterUI'
+enabledepends:
+    - mailfilter
 depends:
-    - users
     - mailfilter
 models:
     - Settings
