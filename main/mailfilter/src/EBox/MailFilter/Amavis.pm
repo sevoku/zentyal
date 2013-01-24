@@ -183,15 +183,16 @@ sub writeConf
 
     # set default policy in sql for external users
     $self->_setSqlPolicy($dbEngine, 'default policy',  {
-        bypass_spam_checks => $antispamActive ? "'N'" : "'Y'",
-        bypass_virus_checks => $antivirusActive ? "'N'" : "'Y'",
+        bypass_spam_checks => $antispamActive ? "N" : "Y",
+        bypass_virus_checks => $antivirusActive ? "N" : "Y",
 
-        spam_modifies_subj => $spamSubject ? "'Y'" : "'N'",
+        spam_tag_level  =>  -99999999,
         spam_tag2_level  => $spamThreshold,
         spam_kill_level  => $spamThreshold,
 
-        spam_subject_tag2 => $spamSubject ? "'$spamSubject'" : "''",
-        spam_subject_tag3 => $spamSubject ? "'$spamSubject'" : "''",
+        spam_modifies_subj => $spamSubject ? "Y" : "N",
+        spam_subject_tag2 => $spamSubject ? "$spamSubject" : "",
+        spam_subject_tag3 => $spamSubject ? "$spamSubject" : "",
        });
 }
 
@@ -199,15 +200,39 @@ sub _setSqlPolicy
 {
     my ($self, $dbEngine, $name, $values) = @_;
     my $table = 'policy';
-    my $selectId = "SELECT id from $table where policy_name ='$name'";
-    my $res = $dbEngine->query($selectId);
-    if (@{ $res }) {
-        my $id = $res->[0]->{id};
-        $dbEngine->update($table, $values, ["id=$id"]);
+    my $id = $self->_sqlPolicyId($dbEngine, $name);
+    if ($id) {
+        my $sql = "UPDATE $table SET ";
+        while (my ($key, $value) = each %{ $values }) {
+            if ($value =~ m/level/) {
+                $sql .= "$key=$value,";
+            } else {
+                $sql .= "$key='$value',";
+            }
+        }
+        $sql =~ s/,$//;
+        $sql .= " WHERE id=$id";
+        $dbEngine->do($sql);
     } else {
         # create a new one
         $values->{policy_name} = $name;
         $dbEngine->unbufferedInsert($table, $values);
+        $id = $self->_sqlPolicyId($dbEngine, $name);
+    }
+    # sync _All_ users with policy id
+    my $updateUsersPolicySQL = "UPDATE users SET policy_id=$id";
+    $dbEngine->do($updateUsersPolicySQL);
+}
+
+sub _sqlPolicyId
+{
+    my ($self, $dbEngine, $name) = @_;
+    my $selectId = "SELECT id from policy where policy_name ='$name'";
+    my $res = $dbEngine->query($selectId);
+    if (@{ $res }) {
+        return $res->[0]->{id};
+    } else {
+        return undef;
     }
 }
 
