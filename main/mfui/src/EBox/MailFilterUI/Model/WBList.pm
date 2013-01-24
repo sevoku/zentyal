@@ -180,7 +180,7 @@ sub _userEmail
 sub _rid
 {
     my ($self) = @_;
-    my $rcpt = $self->_userMail(); # _userMail will create records if rid not in db
+    my $rcpt = $self->_userEmail(); # _userMail will create records if rid not in db
     return $self->{externalAccounts}->_accountId($rcpt);
 }
 

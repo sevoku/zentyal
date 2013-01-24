@@ -31,6 +31,7 @@ use Crypt::Rijndael;
 use Apache2::Connection;
 use Apache2::RequestUtil;
 use Apache2::Const qw(:common HTTP_FORBIDDEN HTTP_MOVED_TEMPORARILY);
+use EBox::MailFilterUI::DBEngine;
 
 use MIME::Base64;
 use Digest::MD5;
@@ -42,17 +43,8 @@ use constant EXPIRE => 3600; #In seconds  1h
 # By now, the expiration time for a script session
 use constant MAX_SCRIPT_SESSION => 10; # In seconds
 
-sub new
-{
-    my $class = shift;
-    my $self = {};
-    bless($self, $class);
-
-    $self->{mfui} = EBox::Global->getInstance(1)->modInstance('mfui');
-    $self->{authSettings}  = $self->{mfui}->authSettings();
-    return $self;
-}
-
+# Method: _savesession
+#
 # Parameters:
 #
 #   - user name
@@ -158,23 +150,29 @@ sub _updatesession
 #       <EBox::Exceptions::Internal> - when password's file cannot be opened
 sub checkPassword # (user, password)
 {
-    my ($self, $user, $passwd) = @_;
-    return 1; # DDD always identified
+    my ($class, $user, $passwd) = @_;
 
-    if (not defined $self->{authSettings}) {
-        # no authentication possible
+    return 1 ; # DDD
+#    if (not defined $mfuiState{authSettings}) {
+#        # no authentication possible
+#        return 0;
+#    }
+#
+#    my $url = $mfuiState{authSettings}->{url};
+#    my $dn = $mfuiState{authSettings}->{bind};
+     my ($url, $dn);
+    if ($class->_checkLdapPassword($user, $passwd, $url, $dn)) {
+        $class->_userSetup($user);
+        return 1;
+    }  else {
         return 0;
     }
-
-    my $url = $self->{authSettings}->{url};
-    my $dn = $self->{authSettings}->{bind};
-    return $self->_checkLdapPassword($user, $passwd, $url, $dn);
 }
 
 sub _checkLdapPassword
 {
-    my ($self, $user, $password, $url, $bind) = @_;
-
+    my ($class, $user, $password, $url, $bind) = @_;
+    return 1; # DDD always identified
     # replace usrename in bind string
     $bind =~ s/{USERNAME}/$user/g;
     my $authorized = 0;
@@ -201,7 +199,7 @@ sub _checkLdapPassword
 #
 sub updatePassword
 {
-    my ($self, $user, $passwd) = @_;
+    my ($class, $user, $passwd) = @_;
     my $r = Apache2::RequestUtil->request();
 
     my $session_info = EBox::MailFilterUI::Auth->key($r);
@@ -216,9 +214,9 @@ sub updatePassword
 #
 sub authen_cred  # (request, user, password)
 {
-    my ($self, $r, $user, $passwd) = @_;
+    my ($class, $r, $user, $passwd) = @_;
 
-    unless ($self->checkPassword($user, $passwd)) {
+    unless ($class->checkPassword($user, $passwd)) {
         EBox::initLogger('mfui-log.conf');
         my $log = EBox->logger();
         my $ip  = $r->connection->remote_host();
@@ -281,7 +279,7 @@ sub _credentials
 #
 sub authen_ses_key  # (request, session_key)
 {
-    my ($self, $r, $session_data) = @_;
+    my ($class, $r, $session_data) = @_;
 
     my $session_key = substr($session_data, 0, 32);
 
@@ -345,12 +343,12 @@ sub _timeExpired
 #
 sub logout # (request)
 {
-    my ($self, $r) = @_;
+    my ($class, $r) = @_;
 
     my $filename = EBox::MailFilterUI::usersessiondir() . $r->user;
     unlink($filename);
 
-    $self->SUPER::logout($r);
+    $class->SUPER::logout($r);
 }
 
 1;
