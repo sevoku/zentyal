@@ -58,7 +58,7 @@ use constant MAX_SCRIPT_SESSION => 10; # In seconds
 #               - When session file cannot be opened to write
 sub _savesession
 {
-        my ($user, $passwd, $sid, $key) = @_;
+    my ($user, $passwd, $sid, $key) = @_;
 
     if(not defined($sid)) {
         my $rndStr;
@@ -99,10 +99,13 @@ sub _savesession
         or throw EBox::Exceptions::Lock('EBox::MailFilterUI::Auth');
     # Truncate the file after locking
     truncate($sidFile, 0);
-        print $sidFile $sid . "\t" . $encodedcryptedpass . "\t" . time if defined $sid;
+    if (defined $sid) {
+       my $cookie = join("\t", $sid, $encodedcryptedpass, time());
+       print $sidFile $cookie;
+    }
     # Release the lock
     flock($sidFile, LOCK_UN);
-        close($sidFile);
+    close($sidFile);
 
     return $sid . $key;
 }
@@ -136,7 +139,7 @@ sub _updatesession
 
 # Method: checkPassword
 #
-#       Check if a given password matches the stored one after md5 it
+#
 #
 # Parameters:
 #
@@ -145,12 +148,12 @@ sub _updatesession
 #
 # Returns:
 #
-#       boolean - true if it's correct, otherwise false
+#       mail of the authorized user or undef if auth failed
 #
 # Exceptions:
 #
 #       <EBox::Exceptions::Internal> - when password's file cannot be opened
-sub checkPassword # (user, password)
+sub checkPasswordAndGetMail # (user, password)
 {
     my ($class, $user, $passwd) = @_;
     my $CONF_FILE = EBox::MailFilterUI->LDAP_CONF;
@@ -165,28 +168,49 @@ sub checkPassword # (user, password)
       return 0;
     }
 
-    if ($class->_checkLdapPassword($user, $passwd, $url)) {
-        return 1;
-    }  else {
+    my $ldap = $class->_checkLdapConn($user, $passwd, $url);
+    if (not $ldap){
         return 0;
     }
+
+    # XXX add exception/error handling
+    # get base DN
+    my $result = $ldap->search(
+         'base' => '',
+         'scope' => 'base',
+         'filter' => '(objectclass=*)',
+         'attrs' => ['defaultNamingContext']
+     );
+    my $entry = ($result->entries)[0];
+    my $baseDN = $entry->get_value('defaultNamingContext');
+
+    # get user mail
+    $result = $ldap->search(
+        base => $baseDN,
+        filter => "&(objectClass=person)(userPrincipalName=$user)",
+        scope => 'sub',
+        attrs => ['mail'],
+       );
+    $entry =  ($result->entries)[0];
+
+    # get mail
+    my $mail = $entry->get_value('mail');
+    return $mail;
 }
 
 # for now we only support AD-style login
-sub _checkLdapPassword
+sub _checkLdapConn
 {
     my ($class, $user, $password, $url) = @_;
-    my $authorized = 0;
+    my $ldap  = undef;
     try {
-        my $ldap = EBox::Ldap::safeConnect($url);
+        $ldap = EBox::Ldap::safeConnect($url);
         EBox::Ldap::safeBind($ldap, $user, $password);
-
-        $authorized = 1; # auth ok
     } otherwise {
-        $authorized = 0; # auth failed
+        $ldap = undef; # auth failed
     };
 
-    return $authorized;
+    return $ldap;
 }
 
 
@@ -218,7 +242,8 @@ sub authen_cred  # (request, user, password)
 {
     my ($class, $r, $user, $passwd) = @_;
 
-    unless ($class->checkPassword($user, $passwd)) {
+    my $mail = $class->checkPasswordAndGetMail($user, $passwd);
+    unless ($mail) {
         EBox::initLogger('mfui-log.conf');
         my $log = EBox->logger();
         my $ip  = $r->connection->remote_host();
@@ -226,7 +251,7 @@ sub authen_cred  # (request, user, password)
         return;
     }
 
-    return _savesession($user, $passwd);
+    return _savesession($user, $passwd, undef, undef);
 }
 
 # Method: credentials
