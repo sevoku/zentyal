@@ -176,10 +176,15 @@ sub _setConf
     EBox::MailFilterUI::DBEngine->setupDBPassFile();
 
     # Setup LDAP auth conf file
-    EBox::Module::Base::writeConfFileNoCheck(LDAP_CONF,
-        "mfui/ldap.conf.mas",
-        [auth => $self->authSettings()]
-       );
+    my $authSettings =   $self->authSettings();
+    if (defined $authSettings) {
+        EBox::Module::Base::writeConfFileNoCheck(LDAP_CONF,
+                                                 "mfui/ldap.conf.mas",
+                                                 [auth => $authSettings]
+                                                );
+    } else {
+        EBox::Sudo::root("rm -f '" . LDAP_CONF . "'");
+    }
 }
 
 # Method: menu

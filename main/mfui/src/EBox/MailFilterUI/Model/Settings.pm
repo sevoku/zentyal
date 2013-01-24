@@ -55,20 +55,8 @@ sub _table
         ),
         new EBox::Types::Host(
             'fieldName' => 'ldapHost',
-            'printableName' => __('External LDAP host'),
+            'printableName' => __('External Active directory server'),
             'editable' => 1,
-        ),
-        new EBox::Types::Port(
-            'fieldName' => 'ldapPort',
-            'printableName' => __('External LDAP port'),
-            'editable' => 1,
-            'defaultValue' => 389,
-        ),
-        new EBox::Types::Text(
-            'fieldName' => 'usersDN',
-            'printableName' => __('External LDAP users DN'),
-            'editable' => 1,
-            'allowUnsafeChars' => 1,
         ),
     );
 
@@ -162,13 +150,8 @@ sub authSettings
     my $row = $self->row();
     my $host = $row->valueByName('ldapHost');
     $host or return undef;
-    my $port = $row->valueByName('ldapPort');
-    $port or return undef;
-    my $usersDN = $row->valueByName('usersDN');
     return {
         host => $host,
-        port => $port,
-        usersDN => $usersDN,
        }
 }
 

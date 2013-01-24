@@ -153,18 +153,9 @@ sub _updatesession
 sub checkPassword # (user, password)
 {
     my ($class, $user, $passwd) = @_;
-
-    return 1 ; # DDD
-#    if (not defined $mfuiState{authSettings}) {
-#        # no authentication possible
-#        return 0;
-#    }
-#
-#    my $url = $mfuiState{authSettings}->{url};
-#    my $dn = $mfuiState{authSettings}->{bind};
     my $CONF_FILE = EBox::MailFilterUI->LDAP_CONF;
 
-     my ($url, $dn);
+     my $url;
      try {
        $url = EBox::Config::configkeyFromFile('ldap_url', $CONF_FILE);
      } otherwise {};
@@ -174,26 +165,21 @@ sub checkPassword # (user, password)
       return 0;
     }
 
-    if ($class->_checkLdapPassword($user, $passwd, $url, $dn)) {
-        $class->_userSetup($user);
+    if ($class->_checkLdapPassword($user, $passwd, $url)) {
         return 1;
     }  else {
         return 0;
     }
 }
 
+# for now we only support AD-style login
 sub _checkLdapPassword
 {
-    my ($class, $user, $password, $url, $bind) = @_;
-    return 1; # DDD always identified
-    # replace usrename in bind string
-#    $bind =~ s/{USERNAME}/$user/g;
-     defined $bind or
-       $bind = $user;
+    my ($class, $user, $password, $url) = @_;
     my $authorized = 0;
     try {
         my $ldap = EBox::Ldap::safeConnect($url);
-        EBox::Ldap::safeBind($ldap, $bind, $password);
+        EBox::Ldap::safeBind($ldap, $user, $password);
 
         $authorized = 1; # auth ok
     } otherwise {
