@@ -773,7 +773,7 @@ $credentials
         ],
     );
 #
-  @storage_sql_dsn = @lookup_sql_dsn;  # none, same, or separate database # XXX
+@storage_sql_dsn =(); # off for now
 # ('mail' in the example is the database name, choose what you like)
 # With PostgreSQL the dsn (first element of the triple) may look like:
 #      'DBI:Pg:host=host1;dbname=mail'
