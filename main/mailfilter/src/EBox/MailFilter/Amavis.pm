@@ -186,8 +186,9 @@ sub writeConf
         bypass_spam_checks => $antispamActive ? "N" : "Y",
         bypass_virus_checks => $antivirusActive ? "N" : "Y",
 
-        spam_tag_level  =>  -99999999,
+        spam_tag_level  =>  undef,
         spam_tag2_level  => $spamThreshold,
+        spam_tag3_level  => $spamThreshold,
         spam_kill_level  => $spamThreshold,
 
         spam_modifies_subj => $spamSubject ? "Y" : "N",
@@ -204,11 +205,12 @@ sub _setSqlPolicy
     if ($id) {
         my $sql = "UPDATE $table SET ";
         while (my ($key, $value) = each %{ $values }) {
-            if ($value =~ m/level/) {
-                $sql .= "$key=$value,";
-            } else {
-                $sql .= "$key='$value',";
+            if (not defined $value) {
+                $value = 'NULL';
+            }  elsif (not $key =~ m/level/) {
+                $value = "'$value'";
             }
+            $sql .= "$key=$value,";
         }
         $sql =~ s/,$//;
         $sql .= " WHERE id=$id";
