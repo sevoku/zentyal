@@ -180,7 +180,6 @@ sub writeConf
 
     my ($password) = @{EBox::Sudo::root('/bin/cat ' . SA_PASSWD_FILE)};
     push @confParams, (password => $password);
-    push @confParams, (scores => {});
 
     EBox::Module::Base::writeConfFileNoCheck(SA_CONF_FILE, "mailfilter/local.cf.mas", \@confParams);
 
@@ -201,8 +200,6 @@ sub bayes
     my ($self) = @_;
     return $self->_confAttr('bayes');
 }
-
-
 
 #
 # Method: autolearn

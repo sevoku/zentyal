@@ -19,7 +19,7 @@ system "rm -rf $outputFileBase*";
 my @mandatoryParams = (
 		       myhostname => 'macaco.monos.org',
 		       mydomain   => 'monos.org',
-		       
+
 		       ldapBase  => 'ea',
 		       ldapQueryFilter  => 'ea',
 		       ldapBindDn  => 'ea',
@@ -27,7 +27,6 @@ my @mandatoryParams = (
 
 		       adminAddress => 'alpha@macaco.org',
 
-		       allowedExternalMTAs => [],
                        spamSubject        => '**SPAM**',
 );
 

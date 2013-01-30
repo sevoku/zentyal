@@ -139,8 +139,6 @@ sub writeConf
 
     push @masonParams, (port => $self->port);
 
-    push @masonParams, (allowedExternalMTAs => $self->allowedExternalMTAs);
-
     push @masonParams, (ldapBase         =>  $ldap->dn );
     push @masonParams, (ldapQueryFilter  =>  '(&(objectClass=amavisAccount)(|(mail=%m)(domainMailPortion=%m)))');
     push @masonParams, (ldapBindDn       =>  $ldap->rootDn );
@@ -336,7 +334,6 @@ sub _localDomains
     my ($self) = @_;
 
     my @vdomains =   EBox::MailVDomainsLdap->new->vdomains();
-    push @vdomains, @{ $self->externalDomains() };
 
     my $mail = EBox::Global->modInstance('mail');
     if ($mail) {
@@ -345,32 +342,6 @@ sub _localDomains
     }
 
     return [@vdomains];
-}
-
-
-# Method : allowedExternalMTAs
-#
-#  get the list of external MTA's addresses which are allowed to connect to the
-#  filter.
-#
-#  Returns:
-#   the MTAs list as a list reference
-sub allowedExternalMTAs
-{
-    my ($self) = @_;
-
-    my $mailfilter  = EBox::Global->modInstance('mailfilter');
-    my $externalMTA = $mailfilter->model('ExternalMTA');
-    return $externalMTA->allowed();
-}
-
-sub externalDomains
-{
-    my ($self) = @_;
-
-    my $mailfilter  = EBox::Global->modInstance('mailfilter');
-    my $externalDomain = $mailfilter->model('ExternalDomain');
-    return $externalDomain->allowed();
 }
 
 sub adminAddress
@@ -441,15 +412,6 @@ sub usesPort
 
     if ($protocol ne 'tcp') {
         return undef;
-    }
-
-    # if we have a interface specified we can check if we don't use it.
-    if ((defined $iface) and ($iface ne 'lo')) {
-        # see if we need to listen in normal interfaces
-        my $externalMTAs = @{ $self->allowedExternalMTAs() } > 0;
-        if (not $externalMTAs) {
-            return undef;
-        }
     }
 
     if ($port == $self->port) {

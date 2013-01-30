@@ -1,4 +1,10 @@
 HEAD
+	+ Removed External MTA connections feature, better use rela
+	  domains feature from zentyal-mail
+	+ Removed POP proxy remain
+	+ External accounts from relayed domains support
+	+ Added dependencies and fixes needed for sa tests
+	+ Dont run spamd daemon
 	+ Adapted learnspamd to changes in user module API
 3.0.3
 	+ Reworked log helper to remove POP proxy and adapt to changes in

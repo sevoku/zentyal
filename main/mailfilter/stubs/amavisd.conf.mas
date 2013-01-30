@@ -6,8 +6,6 @@ $mydomain
 
 $port         => 10024
 
-@allowedExternalMTAs => ()
-
 $ldapBase
 $ldapQueryFilter
 $ldapBindDn
@@ -48,7 +46,6 @@ use warnings;
    localDomains => \@localDomains,  &>
 <& MTASpecific,
   port => $port,
-  allowedExternalMTAs => \@allowedExternalMTAs,
 &>
 <&  LDAPSettings,
 base => $ldapBase,
@@ -223,11 +220,9 @@ $default_ldap = {
 <%def MTASpecific>
 <%args>
 $port
-@allowedExternalMTAs
 </%args>
 <%init>
-my $bindAllIfaces = @allowedExternalMTAs > 0;
-my @allowedMTAs =  ('127.0.0.1', @allowedExternalMTAs);
+my @allowedMTAs =  ('127.0.0.1');
 </%init>
 #
 # Section II - MTA specific (defaults should be ok)
@@ -269,14 +264,7 @@ $gets_addr_in_quoted_form = 1;   # "Bob \"Funny\" Dude"@example.com
 # - do not allow free access to the amavisd SMTP port !!!
 #
 # when MTA is at the same host, use the following (one or the other or both):
-
-% if ($bindAllIfaces) {
-     $inet_socket_bind = undef;
-% } else {
-      $inet_socket_bind = '127.0.0.1';  # limit socket bind to loopback interface
-% }
-
-
+$inet_socket_bind = undef;
 @inet_acl = qw( <% "@allowedMTAs" %>);
 
 # when MTA (one or more) is on a different host, use the following:
@@ -772,7 +760,7 @@ $credentials
         '<% $credentials->{password} %>'
         ],
     );
-#
+
 @storage_sql_dsn =(); # off for now
 # ('mail' in the example is the database name, choose what you like)
 # With PostgreSQL the dsn (first element of the triple) may look like:
