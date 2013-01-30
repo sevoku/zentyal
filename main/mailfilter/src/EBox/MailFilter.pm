@@ -169,12 +169,6 @@ sub enableModDepends
         }
     }
 
-
-    if ($self->popProxy->isEnabled()) {
-        # requires firewall to do the port redirection
-        push @depends, 'firewall';
-    }
-
     return \@depends;;
 }
 
@@ -236,7 +230,6 @@ sub _enforceServiceState
 
     $self->antispam()->doDaemon($enabled);
     $self->smtpFilter()->doDaemon($enabled);
-#FIXME    $self->popProxy()->doDaemon($enabled);
 
     # Workaround postfix amavis issue.
     EBox::Sudo::root('/etc/init.d/postfix restart');

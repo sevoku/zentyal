@@ -38,7 +38,7 @@ sub _description
         name            =>  'FileFilter',
         pageTitle       => __('Attached Files Filter'),
         compositeDomain => 'MailFilter',
-        help            => __('Filter mail messages according attached files. The transparent POP proxy only filters by extension'),
+        help            => __('Filter mail messages according attached files.'),
     };
 
     return $description;

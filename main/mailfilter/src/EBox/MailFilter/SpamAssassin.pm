@@ -28,7 +28,6 @@ use EBox::MailFilter::VDomainsLdap;
 use Error qw(:try);
 
 use constant {
-  SA_SERVICE          => 'ebox.spamd',
   SA_LEARN_SERVICE    => 'ebox.learnspamd',
 
   SA_CONF_FILE       => '/etc/spamassassin/local.cf',
@@ -155,9 +154,8 @@ sub vdomainService
 
 sub isRunning
 {
-    return EBox::Service::running(SA_SERVICE);
+    return 1;
 }
-
 
 sub writeConf
 {
