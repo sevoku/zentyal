@@ -443,9 +443,16 @@ read_l10n_templates('en_US', '/etc/amavis');
 #            session, as the mail has already been enqueued.
 
 $final_virus_destiny      = <% $virusPolicy %>; # (defaults to D_BOUNCE)
+<& .quarantineForCcat,  ccat => 'virus',  destiny => $virusPolicy &>
+
 $final_banned_destiny     = <% $bannedPolicy %> ;  # (defaults to D_BOUNCE)
+<& .quarantineForCcat,  ccat => 'banned',  destiny => $bannedPolicy &>
+
 $final_spam_destiny       = <% $spamPolicy %>;  # (defaults to D_REJECT)
+<& .quarantineForCcat,  ccat => 'spam',  destiny => $spamPolicy &>
+
 $final_bad_header_destiny = <% $bheadPolicy %>;  # (defaults to D_PASS), D_BOUNCE suggested
+<& .quarantineForCcat,  ccat => 'bad_header',  destiny => $bheadPolicy &>
 
 # Alternatives to consider for spam:
 # - use D_PASS if clients will do filtering based on inserted mail headers;
@@ -529,9 +536,6 @@ $virus_admin = undef;
 # equivalent to $virus_admin, but for spam admin notifications:
 $spam_admin = undef;    # do not send spam admin notifications (default)
 
-
-
-
 # whom notification reports are sent from (ENVELOPE SENDER);
 # may be a null reverse path, or a fully qualified address:
 #   (admin and recip sender addresses default to $mailfrom
@@ -559,100 +563,6 @@ $spam_admin = undef;    # do not send spam admin notifications (default)
 #   (defaults to: $mailfrom_notify_admin)
 # $hdrfrom_notify_spamadmin = $mailfrom_notify_spamadmin;
 #   (defaults to: $mailfrom_notify_spamadmin)
-
-# whom quarantined messages appear to be sent from (envelope sender);
-# keeps original sender if undef, or set it explicitly, default is undef
-$mailfrom_to_quarantine = '';   # override sender address with null return path
-
-
-# Location to put infected mail into: (applies to 'local:' quarantine method)
-#   empty for not quarantining, may be a file (mailbox),
-#   or a directory (no trailing slash)
-#   (the default value is undef, meaning no quarantine)
-#
-# $QUARANTINEDIR = '/var/lib/amavis/virusmails';
-# XXX quarantine disabled for now
-$QUARANTINEDIR = undef;
-
-#$virus_quarantine_method = "local:virus-%i-%n";    # default
-#$spam_quarantine_method  = "local:spam-%b-%i-%n";  # default
-#
-#use the new 'bsmtp:' method as an alternative to the default 'local:'
-#$virus_quarantine_method = "bsmtp:$QUARANTINEDIR/virus-%i-%n.bsmtp";
-#$spam_quarantine_method  = "bsmtp:$QUARANTINEDIR/spam-%b-%i-%n.bsmtp";
-
-# When using the 'local:' quarantine method (default), the following applies:
-#
-# A finer control of quarantining is available through variable
-# $virus_quarantine_to/$spam_quarantine_to. It may be a simple scalar string,
-# or a ref to a hash lookup table, or a regexp lookup table object,
-# which makes possible to set up per-recipient quarantine addresses.
-#
-# The value of scalar $virus_quarantine_to/$spam_quarantine_to (or a
-# per-recipient lookup result from the hash table %$virus_quarantine_to)
-# is/are interpreted as follows:
-#
-# VARIANT 1:
-#   empty or undef disables quarantine;
-#
-# VARIANT 2:
-#   a string NOT containing an '@';
-# amavisd will behave as a local delivery agent (LDA) and will quarantine
-# viruses to local files according to hash %local_delivery_aliases (pseudo
-# aliases map) - see subroutine mail_to_local_mailbox() for details.
-# Some of the predefined aliases are 'virus-quarantine' and 'spam-quarantine'.
-# Setting $virus_quarantine_to ($spam_quarantine_to) to this string will:
-#
-# * if $QUARANTINEDIR is a directory, each quarantined virus will go
-#   to a separate file in the $QUARANTINEDIR directory (traditional
-#   amavis style, similar to maildir mailbox format);
-#
-# * otherwise $QUARANTINEDIR is treated as a file name of a Unix-style
-#   mailbox. All quarantined messages will be appended to this file.
-#   Amavisd child process must obtain an exclusive lock on the file during
-#   delivery, so this may be less efficient than using individual files
-#   or forwarding to MTA, and it may not work across NFS or other non-local
-#   file systems (but may be handy for pickup of quarantined files via IMAP
-#   for example);
-#
-# VARIANT 3:
-#   any email address (must contain '@').
-# The e-mail messages to be quarantined will be handed to MTA
-# for delivery to the specified address. If a recipient address local to MTA
-# is desired, you may leave the domain part empty, e.g. 'infected@', but the
-# '@' character must nevertheless be included to distinguish it from variant 2.
-#
-# This method enables more refined delivery control made available by MTA
-# (e.g. its aliases file, other local delivery agents, dealing with
-# privileges and file locking when delivering to user's mailbox, nonlocal
-# delivery and forwarding, fan-out lists). Make sure the mail-to-be-quarantined
-# will not be handed back to amavisd for checking, as this will cause a loop
-# (hopefully broken at some stage)! If this can be assured, notifications
-# will benefit too from not being unnecessarily virus-scanned.
-#
-# By default this is safe to do with Postfix and Exim v4 and dual-sendmail
-# setup, but probably not safe with sendmail milter interface without
-# precaution.
-
-# (the default value is undef, meaning no quarantine)
-
-
-$virus_quarantine_to = undef;                 # no quarantine
-
-
-# similar for spam
-# (the default value is undef, meaning no quarantine)
-#
-$spam_quarantine_to = undef;
-#$spam_quarantine_to = "spam-quarantine\@$mydomain";
-#$spam_quarantine_to = new_RE(                 # per-recip multiple quarantines
-#  [qr'^(.*)@example\.com$'i => 'spam-${1}@example.com'],
-#  [qr/.*/                   => 'spam-quarantine'] );
-
-# In addition to per-recip quarantine, a by-sender lookup is possible. It is
-# similar to $spam_quarantine_to, but the lookup key is the sender address:
-#$spam_quarantine_bysender_to = undef;   # dflt: no by-sender spam quarantine
-
 
 # Add X-Virus-Scanned header field to mail?
 $X_HEADER_TAG = 'X-Virus-Scanned';	# (default: undef)
@@ -690,6 +600,38 @@ $keep_decoded_original_re = new_RE(
   qr'^(ASCII(?! cpio)|text|uuencoded|xxencoded|binhex)'i,
 # qr'^Zip archive data',
 );
+</%def>
+
+<%def .quarantineForCcat>
+<%args>
+$ccat
+$destiny
+</%args>
+<%init>
+my $quarantineMethodVarName;
+if ($ccat eq 'banned') {
+  $quarantineMethodVarName = 'banned_files_quarantine_method';
+} else {
+  $quarantineMethodVarName = $ccat . '_quarantine_method';
+}
+my $quarantineToVarName = $ccat . '_quarantine_to';
+</%init>
+%# only we quarantine discarded messages
+% if ($destiny ne 'D_DISCARD') {
+$<% $quarantineMethodVarName %> = undef;
+$<% $quarantineToVarName %> = undef;
+%   return;
+% }
+<%perl>
+my $quarantineToDes;
+if ($ccat eq 'bad_header') {
+   $quarantineToDes = 'bad-header-quarantine';
+} else {
+   $quarantineToDes = $ccat . '-quarantine';
+}
+</%perl>
+$<% $quarantineMethodVarName %> = 'sql:';
+$<% $quarantineToVarName %> = '<% $quarantineToDes %>';
 </%def>
 
 <%def bannedFileTypes>
@@ -760,8 +702,8 @@ $credentials
         '<% $credentials->{password} %>'
         ],
     );
-
-@storage_sql_dsn =(); # off for now
+#
+@storage_sql_dsn = @lookup_sql_dsn;
 # ('mail' in the example is the database name, choose what you like)
 # With PostgreSQL the dsn (first element of the triple) may look like:
 #      'DBI:Pg:host=host1;dbname=mail'
