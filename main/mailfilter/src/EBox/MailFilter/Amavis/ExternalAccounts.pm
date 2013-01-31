@@ -35,7 +35,6 @@ sub new
     return $self;
 }
 
-#NT
 sub WBListForRID
 {
     my ($self, $rid) = @_;
@@ -47,7 +46,6 @@ sub WBListForRID
     return \@list;
 }
 
-#NT
 sub getWBList
 {
     my ($self, $rid, $sid) = @_;
@@ -125,7 +123,6 @@ sub removeAccount
     $self->_cleanAccountWBList($id);
 }
 
-#NT
 sub mailaddrById
 {
     my ($self, $id) = @_;
