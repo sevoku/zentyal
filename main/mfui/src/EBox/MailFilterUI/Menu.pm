@@ -21,6 +21,7 @@ use EBox::Config;
 use EBox::Global;
 use EBox::Menu;
 use EBox::Menu::Root;
+use EBox::Menu::Item;
 use EBox::Gettext;
 use Storable qw(store);
 
@@ -31,7 +32,12 @@ sub menu
     my $global = EBox::Global->getInstance();
 
     my $root = new EBox::Menu::Root('current' => $current);
-
+    $root->add(
+                 new EBox::Menu::Item(
+                                      'url' => '"mfui/View/WBList',
+                                      'text' => __('Policy by sender')
+                 )
+    );
 
     return $root;
 }
