@@ -6,4 +6,5 @@ depends:
 models:
     - Settings
     - WBList
+    - Quarantine
 

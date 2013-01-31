@@ -35,19 +35,46 @@ sub new
     return $self;
 }
 
-
-sub quarantinedMsgIds
+sub msgKeys
 {
     my ($self, @addresses) = @_;
-    my $sql = qq{select msgrcpt.mail_id from msgrcpt, quarantine,maddr  where quarantine.mail_id=msgrcpt.mail_id and msgrcpt.rid = maddr.id and (};
+    my $sql = qq{select msgrcpt.mail_id, msgrcpt.rseqnum from msgrcpt, quarantine,maddr where quarantine.mail_id=msgrcpt.mail_id and msgrcpt.rid = maddr.id and (};
     my $addrWhere = join ' OR ', map {
         "(maddr.email = '$_' )"
     } @addresses;
     $sql .= $addrWhere . ')';
 
     my $res = $self->{dbengine}->query($sql);
-    my @ids = map { $_->{mail_id} } @{ $res };
+    my @ids = map { $_->{mail_id} .':' . $_->{rseqnum} } @{ $res };
     return \@ids;
 }
+
+sub msgRcptInfo
+{
+    my ($self, $mailKey) = @_;
+    my ($mailId, $rseqnum) = split ':', $mailKey, 2;
+    my $sql = qq{select * from msgrcpt WHERE mail_id='$mailId' AND rseqnum='$rseqnum'};
+    my $res = $self->{dbengine}->query($sql);
+    if (@{ $res }) {
+        return $res->[0];
+    }
+
+    return undef;
+}
+
+sub msgInfo
+{
+    my ($self, $mailKey) = @_;
+    my ($mailId, $rseqnum) = split ':', $mailKey, 2;
+    my $sql = qq{select msgs.*, maddr.email from msgs, maddr WHERE msgs.mail_id='$mailId' AND msgs.sid = maddr.id};
+    my $res = $self->{dbengine}->query($sql);
+    if (@{ $res }) {
+        return $res->[0];
+    }
+
+    return undef;
+
+}
+
 
 1;

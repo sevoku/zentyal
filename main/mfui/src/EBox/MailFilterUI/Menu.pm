@@ -36,8 +36,14 @@ sub menu
                  new EBox::Menu::Item(
                                       'url' => '"mfui/View/WBList',
                                       'text' => __('Policy by sender')
+                                     )
+                );
+   $root->add(
+                new EBox::Menu::Item(
+                                      'url' => '"mfui/View/Quarantine',
+                                      'text' => __('Quarantined mail')
                  )
-    );
+             );
 
     return $root;
 }
