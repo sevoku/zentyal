@@ -94,7 +94,7 @@ sub _table
             model => $self,
             name => 'release',
             printableValue => __('Release from qurantine'),
-            onclick => \&_releaseClicked,
+            handler => \&_releaseClicked,
             image => '/data/images/terminal.gif',
         ),
        ];
@@ -170,10 +170,11 @@ sub _user
 
 sub _releaseClicked
 {
-    my ($self, $id) = @_;
+    my ($self, $type, $id) = @_;
     my ($msgId, $rseqNum) = split ':' ,$id, 2;
     my $addr = $self->_userEmail();
     $self->{quarantine}->release($msgId, $addr);
+    return '';
 }
 
 # Method: _checkRowExist
