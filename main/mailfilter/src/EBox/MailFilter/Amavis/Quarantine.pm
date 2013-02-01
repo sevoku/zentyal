@@ -18,6 +18,9 @@ use warnings;
 package EBox::MailFilter::Amavis::Quarantine;
 
 use EBox::Exceptions::MissingArgument;
+use EBox::Exceptions::DataNotFound;
+use EBox::Exceptions::External;
+use EBox::Gettext;
 
 sub new
 {
@@ -73,7 +76,34 @@ sub msgInfo
     }
 
     return undef;
+}
 
+# must have permission to use the amavis socket
+sub release
+{
+    my ($self, $msgId, $addr) = @_;
+    $addr  or throw EBox::Exceptions::MissingArgument('address');
+    $msgId or throw EBox::Exceptions::MissingArgument('message id');
+    # XXX check that is a qurantined msg?
+    # get secret_id to do the release
+    my $sql =  qq{select secret_id from msgs where mail_id='$msgId'};
+    my $res = $self->{dbengine}->query($sql);
+    if (not @{ $res }) {
+        throw EBox::Exceptions::DataNotFound(
+              data => __('Mail message'),
+              value => $msgId,
+           );
+    }
+
+    my $secretId = $res->[0]->{secret_id};
+    my $releaseCmd = qq{/usr/sbin/amavisd-release '$msgId' '$secretId' '$addr' 2>&1};
+    my @output = `$releaseCmd`;
+    if ($? != 0) {
+        EBox::error("$releaseCmd : @output");
+        throw EBox::Exceptions::External(
+             __('Release for quarantine faile')
+           );
+    }
 }
 
 
