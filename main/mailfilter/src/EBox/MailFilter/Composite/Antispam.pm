@@ -14,7 +14,6 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 package EBox::MailFilter::Composite::Antispam;
-
 use base 'EBox::Model::Composite';
 
 use strict;
@@ -76,7 +75,7 @@ sub _description
         layout          => 'top-bottom',
         name            =>  'Antispam',
         printableName   => __('Antispam'),
-        pageTitle	    => __('Antispam'),
+        pageTitle           => __('Antispam'),
         compositeDomain => 'MailFilter',
     };
 
