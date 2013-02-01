@@ -236,22 +236,25 @@ my @allowedMTAs =  ('127.0.0.1');
 #
 # These are logged at level 3, so enable logging until you know you got it
 # right.
-$relayhost_is_client = 1;         # to allow dimaic forward_method
+$relayhost_is_client = 0;         # to allow dimaic forward_method
 
 $insert_received_line = 1;        # behave like MTA: insert 'Received:' header
-			          # (does not apply to sendmail/milter)
-			          # (default is true (1) )
+                                  # (does not apply to sendmail/milter)
+                                  # (default is true (1) )
 
 # AMAVIS-CLIENT PROTOCOL INPUT SETTINGS (e.g. with sendmail milter)
-$unix_socketname = undef;         # disable listening on a unix socket
-                                  # (default is undef, i.e. disabled)
+$unix_socketname = "$MYHOME/amavisd.sock";  # listen on Unix socket
 
+# apply policy bank AM.PDP-SOCK on a Unix socket:
+#  (note that this precludes the use of old amavis-milter
+#   helper program (with sendmail) on the same socket)
+$interface_policy{'SOCK'} = 'AM.PDP';
+$policy_bank{'AM.PDP'} = {protocol=>'AM.PDP'};
+
+#
 # Do we receive quoted or raw addresses from the helper program?
 # (does not apply to SMTP;  defaults to true)
 $gets_addr_in_quoted_form = 1;   # "Bob \"Funny\" Dude"@example.com
-
-
-
 
 # SMTP SERVER (INPUT) PROTOCOL SETTINGS (e.g. with Postfix, Exim v4, ...)
 #   (used when MTA is configured to pass mail to amavisd via SMTP or LMTP)
@@ -454,6 +457,13 @@ $final_spam_destiny       = <% $spamPolicy %>;  # (defaults to D_REJECT)
 $final_bad_header_destiny = <% $bheadPolicy %>;  # (defaults to D_PASS), D_BOUNCE suggested
 <& .quarantineForCcat,  ccat => 'bad_header',  destiny => $bheadPolicy &>
 
+# DDD
+#$release_method = undef;  # falls back to $notify_method
+#$requeue_method = 'smtp:[127.0.0.1]:25';
+#$release_format = 'resend';  # (dsn), (arf), attach,  plain,  resend
+#$report_format  = 'arf';     # (dsn),  arf,  attach,  plain,  resend
+
+
 # Alternatives to consider for spam:
 # - use D_PASS if clients will do filtering based on inserted mail headers;
 # - use D_DISCARD, if kill_level is set safely high;
@@ -616,9 +626,9 @@ if ($ccat eq 'banned') {
 }
 my $quarantineToVarName = $ccat . '_quarantine_to';
 </%init>
+$<% $quarantineMethodVarName %> = 'sql:';
 %# only we quarantine discarded messages
 % if ($destiny ne 'D_DISCARD') {
-$<% $quarantineMethodVarName %> = undef;
 $<% $quarantineToVarName %> = undef;
 %   return;
 % }
@@ -630,7 +640,6 @@ if ($ccat eq 'bad_header') {
    $quarantineToDes = $ccat . '-quarantine';
 }
 </%perl>
-$<% $quarantineMethodVarName %> = 'sql:';
 $<% $quarantineToVarName %> = '<% $quarantineToDes %>';
 </%def>
 
