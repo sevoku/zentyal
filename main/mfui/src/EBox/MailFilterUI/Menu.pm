@@ -34,13 +34,13 @@ sub menu
     my $root = new EBox::Menu::Root('current' => $current);
     $root->add(
                  new EBox::Menu::Item(
-                                      'url' => '"mfui/View/WBList',
+                                      'url' => 'mfui/View/WBList',
                                       'text' => __('Policy by sender')
                                      )
                 );
    $root->add(
                 new EBox::Menu::Item(
-                                      'url' => '"mfui/View/Quarantine',
+                                      'url' => 'mfui/View/Quarantine',
                                       'text' => __('Quarantined mail')
                  )
              );
