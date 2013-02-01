@@ -31,6 +31,8 @@ use constant MFUI_APACHE => EBox::Config->conf() . '/mfui-apache2.conf';
 use constant MFUI_REDIS => '/var/lib/zentyal-mfui/conf/redis.conf';
 use constant MFUI_REDIS_PASS => '/var/lib/zentyal-mfui/conf/redis.passwd';
 use constant LDAP_CONF => '/var/lib/zentyal-mfui/ldap.conf';
+use constant AMAVIS_HOME => '/var/lib/amavis';
+use constant AMAVIS_SOCKET =>  AMAVIS_HOME .  '/amavisd.sock';
 
 sub _create
 {
@@ -185,6 +187,12 @@ sub _setConf
     } else {
         EBox::Sudo::root("rm -f '" . LDAP_CONF . "'");
     }
+
+    # Make release socket available to zentyal-mfui user
+    EBox::Sudo::root(
+        'setfacl -m u:' . MFUI_USER .':rx '. AMAVIS_HOME,
+        'setfacl -m u:' . MFUI_USER .':rw '. AMAVIS_SOCKET
+       );
 }
 
 # Method: menu

@@ -22,6 +22,7 @@ use EBox::Gettext;
 use EBox::Validate qw(:all);
 use EBox::Types::Text;
 use EBox::Types::Float;
+use EBox::Types::Action;
 
 use EBox::MailFilterUI::DBEngine;
 use EBox::MailFilter::Amavis::Quarantine;
@@ -46,11 +47,13 @@ sub new
 
 sub pageTitle
 {
-    return __('Sender policy');
+    return __('Quarantined mail');
 }
 
 sub _table
 {
+    my ($self) = @_;
+
     my @tableHead =
     (
         new EBox::Types::Text(
@@ -84,16 +87,27 @@ sub _table
             'unique' => 0,
             'editable' => 0,
         ),
-
     );
+
+    my $customActions = [
+        new EBox::Types::Action(
+            model => $self,
+            name => 'release',
+            printableValue => __('Release from qurantine'),
+            onclick => \&_releaseClicked,
+            image => '/data/images/terminal.gif',
+        ),
+       ];
+
     my $dataTable =
     {
         'tableName' => 'Quarantine',
-        'printableTableName' => __('Quarantined messages'),
+        'printableTableName' => __('Messages'),
         'modelDomain' => 'mfui',
         'defaultActions' => ['changeView' ],
         'tableDescription' => \@tableHead,
         'printableRowName' => __('message'),
+        customActions      => $customActions,
         'help' => '', # FIXME
     };
 
@@ -128,10 +142,6 @@ sub row
     return $row;
 }
 
-
-
-
-
 # TODO get somehow the users email
 sub _userEmail
 {
@@ -156,6 +166,14 @@ sub _user
     my $r = Apache2::RequestUtil->request;
     my $user = $r->user;
     return $user;
+}
+
+sub _releaseClicked
+{
+    my ($self, $id) = @_;
+    my ($msgId, $rseqNum) = split ':' ,$id, 2;
+    my $addr = $self->_userEmail();
+    $self->{quarantine}->release($msgId, $addr);
 }
 
 # Method: _checkRowExist
