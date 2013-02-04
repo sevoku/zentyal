@@ -38,10 +38,13 @@ sub new
     return $self;
 }
 
+# XXX RT release status
 sub msgKeys
 {
     my ($self, @addresses) = @_;
-    my $sql = qq{select msgrcpt.mail_id, msgrcpt.rseqnum from msgrcpt, quarantine,maddr where quarantine.mail_id=msgrcpt.mail_id and msgrcpt.rid = maddr.id and (};
+    my $sql = qq{select msgrcpt.mail_id, msgrcpt.rseqnum from msgrcpt, quarantine,maddr where quarantine.mail_id=msgrcpt.mail_id and msgrcpt.rid = maddr.id and };
+    # check release status
+    $sql.= qq{(msgrcpt.rs = ' ') and (};
     my $addrWhere = join ' OR ', map {
         "(maddr.email = '$_' )"
     } @addresses;
@@ -78,25 +81,41 @@ sub msgInfo
     return undef;
 }
 
+# XXX RT
 # must have permission to use the amavis socket
 sub release
 {
-    my ($self, $msgId, $addr) = @_;
+    my ($self, $key, $addr) = @_;
     $addr  or throw EBox::Exceptions::MissingArgument('address');
-    $msgId or throw EBox::Exceptions::MissingArgument('message id');
-    # XXX check that is a qurantined msg?
-    # get secret_id to do the release
-    my $sql =  qq{select secret_id from msgs where mail_id='$msgId'};
+    $key or throw EBox::Exceptions::MissingArgument('message key');
+    my ($mailId, $rseqnum) = split ':', $key, 2;
+
+    my $sql = qq{SELECT rs FROM msgrcpt where mail_id='$mailId' and rseqnum='$rseqnum'};
     my $res = $self->{dbengine}->query($sql);
+    if (@{ $res }) {
+        my $rs = $res->[0]->{rs};
+        if ($rs eq 'R') {
+            throw EBox::Exceptions::External(__('Message already released'));
+        }
+    } else {
+        throw EBox::Exceptions::DataNotFound(
+              data => __('Mail message'),
+              value => $key,
+           );
+    }
+
+    # get secret_id to do the release
+    $sql =  qq{select secret_id from msgs where mail_id='$mailId'};
+    $res = $self->{dbengine}->query($sql);
     if (not @{ $res }) {
         throw EBox::Exceptions::DataNotFound(
               data => __('Mail message'),
-              value => $msgId,
+              value => $key,
            );
     }
 
     my $secretId = $res->[0]->{secret_id};
-    my $releaseCmd = qq{/usr/sbin/amavisd-release '$msgId' '$secretId' '$addr' 2>&1};
+    my $releaseCmd = qq{/usr/sbin/amavisd-release '$mailId' '$secretId' '$addr' 2>&1};
     my @output = `$releaseCmd`;
     if ($? != 0) {
         EBox::error("$releaseCmd : @output");
@@ -104,7 +123,10 @@ sub release
              __('Release for quarantine faile')
            );
     }
-}
 
+    # update release info
+    my $upSql = qq{UPDATE msgrcpt SET rs='R' where mail_id='$mailId' and rseqnum='$rseqnum'};
+    $self->{dbengine}->do($upSql);
+}
 
 1;

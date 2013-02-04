@@ -16,18 +16,17 @@ use strict;
 use warnings;
 
 package EBox::MailFilterUI::Model::WBList;
-use base 'EBox::Model::DataTable';
+use base qw(EBox::Model::DataTable EBox::MailFilterUI::UserAccount);
 
 use EBox::Gettext;
 use EBox::Validate qw(:all);
 use EBox::MailFilter::Types::AmavisSender;
 use EBox::::Types::Select;
 
+
 use EBox::MailFilterUI::DBEngine;
 use EBox::MailFilter::Amavis::ExternalAccounts;
-use EBox::MailFilterUI::Auth;
 
-use Apache2::RequestUtil;
 use File::Temp qw/tempfile/;
 
 sub new
@@ -166,39 +165,7 @@ sub removeRow
     $self->setMessage(__('Sender policy removed') );
 }
 
-# TODO get somehow the users email
-sub _userEmail
-{
-    my ($self, $returnId) = @_;
 
-    my $user = $self->_user();
-    my $sessionFile = EBox::MailFilterUI::usersessiondir() . $user;
-    my $sessionKey = `cat '$sessionFile'`;
-    if ($? != 0) {
-       throw EBox::Exceptions::Internal('Error getting user session info');
-    }
-    my ($sid, $key, $time, $mail) = split '\t', $sessionKey;
-    if (not $self->{externalAccounts}->_accountId($mail)) {
-        # add user to table if not exists
-        $self->{externalAccounts}->addAccount($mail, $user);
-    }
-
-    return $mail;
-}
-
-sub _rid
-{
-    my ($self) = @_;
-    my $rcpt = $self->_userEmail(); # _userMail will create records if rid not in db
-    return $self->{externalAccounts}->_accountId($rcpt);
-}
-
-sub _user
-{
-    my $r = Apache2::RequestUtil->request;
-    my $user = $r->user;
-    return $user;
-}
 
 # Method: _checkRowExist
 #

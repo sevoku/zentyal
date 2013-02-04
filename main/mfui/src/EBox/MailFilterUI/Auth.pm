@@ -161,6 +161,8 @@ sub _updatesession
 sub checkPasswordAndGetMail # (user, password)
 {
     my ($class, $user, $passwd) = @_;
+    return 'user1@mail1.com';     # DDD
+
     my $CONF_FILE = EBox::MailFilterUI->LDAP_CONF;
 
      my $url;

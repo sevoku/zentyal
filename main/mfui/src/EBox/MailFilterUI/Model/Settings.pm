@@ -57,6 +57,7 @@ sub _table
             'fieldName' => 'ldapHost',
             'printableName' => __('External Active directory server'),
             'editable' => 1,
+            'defaultValue' => 'ad.example.com',
         ),
     );
 

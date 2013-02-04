@@ -16,7 +16,7 @@ use strict;
 use warnings;
 
 package EBox::MailFilterUI::Model::Quarantine;
-use base 'EBox::Model::DataTable';
+use base qw(EBox::Model::DataTable EBox::MailFilterUI::UserAccount);
 
 use EBox::Gettext;
 use EBox::Validate qw(:all);
@@ -25,10 +25,8 @@ use EBox::Types::Float;
 use EBox::Types::Action;
 
 use EBox::MailFilterUI::DBEngine;
+use EBox::MailFilter::Amavis::ExternalAccounts;
 use EBox::MailFilter::Amavis::Quarantine;
-use EBox::MailFilterUI::Auth;
-
-use Apache2::RequestUtil;
 use File::Temp qw/tempfile/;
 
 sub new
@@ -39,6 +37,8 @@ sub new
     bless($self, $class);
 
     my $dbengine = EBox::MailFilterUI::DBEngine->new();
+    $self->{externalAccounts}  =
+        EBox::MailFilter::Amavis::ExternalAccounts->new(dbengine => $dbengine);
     $self->{quarantine}  =
         EBox::MailFilter::Amavis::Quarantine->new(dbengine => $dbengine);
 
@@ -140,32 +140,6 @@ sub row
        );
     $row->setId($id);
     return $row;
-}
-
-# TODO get somehow the users email
-sub _userEmail
-{
-    my ($self, $returnId) = @_;
-
-    my $user = $self->_user();
-    my $sessionFile = EBox::MailFilterUI::usersessiondir() . $user;
-    my $sessionKey = `cat '$sessionFile'`;
-    if ($? != 0) {
-       throw EBox::Exceptions::Internal('Error getting user session info');
-    }
-    my ($sid, $key, $time, $mail) = split '\t', $sessionKey;
-    # TODO add accoutn here if does not exists
-
-    return $mail;
-}
-
-
-
-sub _user
-{
-    my $r = Apache2::RequestUtil->request;
-    my $user = $r->user;
-    return $user;
 }
 
 sub _releaseClicked
