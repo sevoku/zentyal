@@ -38,17 +38,16 @@ sub new
     return $self;
 }
 
-# XXX RT release status
 sub msgKeys
 {
     my ($self, @addresses) = @_;
-    my $sql = qq{select msgrcpt.mail_id, msgrcpt.rseqnum from msgrcpt, quarantine,maddr where quarantine.mail_id=msgrcpt.mail_id and msgrcpt.rid = maddr.id and };
+    my $sql = qq{select msgrcpt.mail_id, msgrcpt.rseqnum from msgrcpt, msgs, quarantine,maddr where quarantine.mail_id=msgrcpt.mail_id and msgrcpt.rid = maddr.id and msgrcpt.mail_id = msgs.mail_id and };
     # check release status
     $sql.= qq{(msgrcpt.rs = ' ') and (};
     my $addrWhere = join ' OR ', map {
         "(maddr.email = '$_' )"
     } @addresses;
-    $sql .= $addrWhere . ')';
+    $sql .= $addrWhere . ') ORDER BY msgs.time_num DESC';
 
     my $res = $self->{dbengine}->query($sql);
     my @ids = map { $_->{mail_id} .':' . $_->{rseqnum} } @{ $res };
@@ -81,7 +80,6 @@ sub msgInfo
     return undef;
 }
 
-# XXX RT
 # must have permission to use the amavis socket
 sub release
 {

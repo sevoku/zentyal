@@ -28,6 +28,7 @@ use EBox::MailFilterUI::DBEngine;
 use EBox::MailFilter::Amavis::ExternalAccounts;
 use EBox::MailFilter::Amavis::Quarantine;
 use File::Temp qw/tempfile/;
+use Time::Piece;
 
 sub new
 {
@@ -86,6 +87,7 @@ sub _table
             'printableName' => __('Date'),
             'unique' => 0,
             'editable' => 0,
+            'filter' => \&_isoDateFilter,
         ),
     );
 
@@ -109,6 +111,7 @@ sub _table
         'printableRowName' => __('message'),
         customActions      => $customActions,
         'help' => '', # FIXME
+        'sortedBy' => 'date',
     };
 
     return $dataTable;
@@ -130,16 +133,23 @@ sub row
     my $rcptInfo = $self->{quarantine}->msgRcptInfo($id);
     my $msgInfo  = $self->{quarantine}->msgInfo($id);
 
-
     my $row = $self->_setValueRow(
         type => $rcptInfo->{content},
         from => $msgInfo->{email},
         subject => $msgInfo->{subject},
         spamScore => $rcptInfo->{bspam_level},
-        date => $msgInfo->{time_iso},
+        date =>  $msgInfo->{time_iso},
        );
     $row->setId($id);
     return $row;
+}
+
+sub _isoDateFilter
+{
+    my ($dateElement) = @_;
+    my $isoDate = $dateElement->value();
+    my $date = Time::Piece->strptime($isoDate, '%Y%m%dT%H%M%SZ%z');
+    return  $date->strftime('%a, %d %b %Y %T' ),
 }
 
 sub _releaseClicked
