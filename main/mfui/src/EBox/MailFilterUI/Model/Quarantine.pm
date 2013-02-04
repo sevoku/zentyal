@@ -62,6 +62,7 @@ sub _table
             'printableName' => __('Type'),
             'unique' => 0,
             'editable' => 0,
+            'filter' => \&_typeFilter,
         ),
         new EBox::Types::Text(
             'fieldName' => 'from',
@@ -117,8 +118,6 @@ sub _table
     return $dataTable;
 }
 
-
-
 sub ids
 {
     my ($self) = @_;
@@ -134,7 +133,7 @@ sub row
     my $msgInfo  = $self->{quarantine}->msgInfo($id);
 
     my $row = $self->_setValueRow(
-        type => $rcptInfo->{content},
+        type => $msgInfo->{content},
         from => $msgInfo->{email},
         subject => $msgInfo->{subject},
         spamScore => $rcptInfo->{bspam_level},
@@ -150,6 +149,27 @@ sub _isoDateFilter
     my $isoDate = $dateElement->value();
     my $date = Time::Piece->strptime($isoDate, '%Y%m%dT%H%M%SZ%z');
     return  $date->strftime('%a, %d %b %Y %T' ),
+}
+
+my %printableTypes = (
+    V => __('Virus'),
+    B => __('Banned file'),
+    U => __('Unchecked'),
+    S => __('Spam'),
+    Y => __('Spam'),
+    M => __('Bad MIME type'),
+    H => __('Bad header'),
+    O => __('Oversized'),
+    T => __('MTA error'),
+    C => __('Clean'),
+);
+
+sub _typeFilter
+{
+    my ($typeElement) = @_;
+    my $value = $typeElement->value();
+    defined $value or return '';
+    return $printableTypes{$value};
 }
 
 sub _releaseClicked
