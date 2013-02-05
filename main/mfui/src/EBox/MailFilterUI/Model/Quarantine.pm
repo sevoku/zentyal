@@ -139,9 +139,13 @@ sub _table
 sub ids
 {
     my ($self) = @_;
-    my $email = $self->_userEmail();
-    my $ids = $self->{quarantine}->msgKeys($email);
-    return $ids;
+    my @addrs = @{ $self->_userAllAddresses() };
+    my @ids;
+    foreach my $addr (@addrs) {
+        push @ids, @{ $self->{quarantine}->msgKeys($addr)  };
+    }
+
+    return \@ids;
 }
 
 sub row
