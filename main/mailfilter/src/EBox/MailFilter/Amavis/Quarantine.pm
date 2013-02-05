@@ -87,24 +87,11 @@ sub release
     $addr  or throw EBox::Exceptions::MissingArgument('address');
     $key or throw EBox::Exceptions::MissingArgument('message key');
     my ($mailId, $rseqnum) = split ':', $key, 2;
-
-    my $sql = qq{SELECT rs FROM msgrcpt where mail_id='$mailId' and rseqnum='$rseqnum'};
-    my $res = $self->{dbengine}->query($sql);
-    if (@{ $res }) {
-        my $rs = $res->[0]->{rs};
-        if ($rs eq 'R') {
-            throw EBox::Exceptions::External(__('Message already released'));
-        }
-    } else {
-        throw EBox::Exceptions::DataNotFound(
-              data => __('Mail message'),
-              value => $key,
-           );
-    }
+    $self->_checkMsgIsQuarantined($mailId, $rseqnum);
 
     # get secret_id to do the release
-    $sql =  qq{select secret_id from msgs where mail_id='$mailId'};
-    $res = $self->{dbengine}->query($sql);
+    my $sql =  qq{select secret_id from msgs where mail_id='$mailId'};
+    my $res = $self->{dbengine}->query($sql);
     if (not @{ $res }) {
         throw EBox::Exceptions::DataNotFound(
               data => __('Mail message'),
@@ -125,6 +112,51 @@ sub release
     # update release info
     my $upSql = qq{UPDATE msgrcpt SET rs='R' where mail_id='$mailId' and rseqnum='$rseqnum'};
     $self->{dbengine}->do($upSql);
+}
+
+sub remove
+{
+    my ($self, $key) = @_;
+    $key or throw EBox::Exceptions::MissingArgument('message key');
+    my ($mailId, $rseqnum) = split ':', $key, 2;
+    my $upSql = qq{UPDATE msgrcpt SET rs='D' where mail_id='$mailId' and rseqnum='$rseqnum'};
+    $self->{dbengine}->do($upSql);
+}
+
+sub mailText
+{
+    my ($self, $key) = @_;
+    $key or throw EBox::Exceptions::MissingArgument('message key');
+    my ($mailId, $rseqnum) = split ':', $key, 2;
+    $self->_checkMsgIsQuarantined($mailId, $rseqnum);
+
+    my $sql = qq{SELECT mail_text FROM quarantine WHERE mail_id='$mailId'};
+    my $res = $self->{dbengine}->query($sql);
+    if (@{ $res }) {
+        return $res->[0]->{mail_text};
+    } else {
+        return '';
+    }
+}
+
+sub _checkMsgIsQuarantined
+{
+    my ($self, $mailId, $rseqnum) = @_;
+    my $sql = qq{SELECT rs FROM msgrcpt where mail_id='$mailId' and rseqnum='$rseqnum'};
+    my $res = $self->{dbengine}->query($sql);
+    if (@{ $res }) {
+        my $rs = $res->[0]->{rs};
+        if ($rs eq 'R') {
+            throw EBox::Exceptions::External(__('Message already released'));
+        } elsif ($rs eq 'D') {
+            throw EBox::Exceptions::External(__('Message was deleted'));
+        }
+    } else {
+        throw EBox::Exceptions::DataNotFound(
+              data => __('Mail message'),
+              value => "$mailId:$rseqnum",
+           );
+    }
 }
 
 1;
