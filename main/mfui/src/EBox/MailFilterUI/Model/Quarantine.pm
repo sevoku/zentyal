@@ -25,6 +25,7 @@ use EBox::Types::Float;
 use EBox::Types::Action;
 
 use EBox::MailFilterUI::DBEngine;
+use EBox::MailFilterUI::SanitizeHTML;
 use EBox::MailFilter::Amavis::ExternalAccounts;
 use EBox::MailFilter::Amavis::Quarantine;
 use File::Temp qw/tempfile/;
@@ -70,12 +71,15 @@ sub _table
             'help' => __('Domain or email address'),
             'unique' => 0,
             'editable' => 0,
+            'allowUnsafeChars' => 1,
         ),
         new EBox::Types::Text(
             'fieldName' => 'subject',
             'printableName' => __('Subject'),
             'unique' => 0,
             'editable' => 0,
+            'allowUnsafeChars' => 1,
+            'filter' => \&_htmlSubjectFilter,
         ),
         new EBox::Types::Float(
             'fieldName' => 'spamScore',
@@ -97,8 +101,22 @@ sub _table
             model => $self,
             name => 'release',
             printableValue => __('Release from qurantine'),
-            handler => \&_releaseClicked,
-            image => '/data/images/terminal.gif',
+            handler => \&_releaseAction,
+            image => '/data/images/show.gif',
+        ),
+        new EBox::Types::Action(
+            model => $self,
+            name => 'remove',
+            printableValue => __('Remove'),
+            handler => \&_removeAction,
+            image => '/data/images/delete.gif',
+        ),
+        new EBox::Types::Action(
+            model => $self,
+            name => 'show',
+            printableValue => __('Show'),
+            onclick => \&_showClicked,
+            image => '/data/images/search.gif',
         ),
        ];
 
@@ -172,13 +190,50 @@ sub _typeFilter
     return $printableTypes{$value};
 }
 
-sub _releaseClicked
+sub _htmlSubjectFilter
+{
+    my ($element) = @_;
+    my $subj = $element->value();
+    defined $subj or return '';
+    return EBox::MailFilterUI::SanitizeHTML::sanitizeSubject($subj);
+}
+
+sub _releaseAction
 {
     my ($self, $type, $id) = @_;
-    my ($msgId, $rseqNum) = split ':' ,$id, 2;
+    my $key = $self->_idToKey($id);
+    $self->_userAllowedMailKey($key);
+
     my $addr = $self->_userEmail();
-    $self->{quarantine}->release($msgId, $addr);
-    return '';
+
+    $self->{quarantine}->release($id, $addr);
+}
+
+sub _removeAction
+{
+    my ($self, $type, $id) = @_;
+    my $key = $self->_idToKey($id);
+    $self->_userAllowedMailKey($key);
+    $self->{quarantine}->remove($key);
+}
+
+sub _showClicked
+{
+    my ($self, $id) = @_;
+    my $key = $self->_idToKey($id);
+    $self->_userAllowedMailKey($key);
+
+    my $mailText = $self->{quarantine}->mailText($key);
+
+    return "Modalbox.show('/ViewMail?key=$key', {title: 'title',  wideWindow : true,}); return false",
+}
+
+sub _idToKey
+{
+    my ($self, $id) = @_;
+    my $key = $id;
+    $key =~ s{\s}{\+}g;
+    return $key;
 }
 
 # Method: _checkRowExist

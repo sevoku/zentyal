@@ -63,5 +63,10 @@ sub _user
     return $user;
 }
 
+sub _userAllowedMailKey
+{
+    my ($self, $mailKey) = @_;
+    # TODO
+}
 
 1;
