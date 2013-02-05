@@ -76,6 +76,10 @@ sub _newParser
        {
            Context => 'Flow',       ## HTML::StripScripts configuration
            BanList => $banList,
+           AllowSrc => 0,
+           AllowHref => 0,
+           AllowRelURL => 0,
+           AllowMailto => 0
        },
 
        strict_comment => 1,             ## HTML::Parser options

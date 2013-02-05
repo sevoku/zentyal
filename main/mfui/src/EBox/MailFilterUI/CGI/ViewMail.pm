@@ -22,6 +22,7 @@ use EBox::Gettext;
 use EBox::MailFilterUI::DBEngine;
 use EBox::MailFilter::Amavis::ExternalAccounts;
 use EBox::MailFilter::Amavis::Quarantine;
+use EBox::MailFilterUI::SanitizeHTML;
 
 sub new
 {
@@ -47,9 +48,12 @@ sub _process
     my $key = $self->param('key');
     $self->_userAllowedMailKey($key);
     my $mailText = $self->{quarantine}->mailText($key);
+    $mailText =~ s{\n}{<br>}g;
+    my $sanitizedMail = EBox::MailFilterUI::SanitizeHTML::sanitizeMsg($mailText);
 
     $self->{params} = [
-        text => $mailText,
+        text => $sanitizedMail,
+        textClass => 'tleft',
         buttonText => __('Close'),
    ];
 

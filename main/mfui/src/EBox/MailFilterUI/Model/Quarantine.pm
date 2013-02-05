@@ -221,7 +221,8 @@ sub _showClicked
 {
     my ($self, $id) = @_;
     my $key = $self->_idToKey($id);
-    return "Modalbox.show('/ViewMail?key=$key', {title: 'title',  wideWindow : true,}); return false",
+    my $title = __('Message contents');
+    return "Modalbox.show('/ViewMail?key=$key', {title: '$title',  wideWindow : true,}); return false",
 }
 
 sub _idToKey
