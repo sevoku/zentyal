@@ -54,6 +54,7 @@ sub msgKeys
     return \@ids;
 }
 
+# TODO move to another class
 sub msgRcptInfo
 {
     my ($self, $mailKey) = @_;
@@ -67,6 +68,7 @@ sub msgRcptInfo
     return undef;
 }
 
+# TODO move to another class
 sub msgInfo
 {
     my ($self, $mailKey) = @_;
@@ -78,6 +80,21 @@ sub msgInfo
     }
 
     return undef;
+}
+
+# TODO move to another class
+sub rcptAddresses
+{
+    my ($self, $mailKey) = @_;
+    my ($mail_id, $rseqnum) = split ':', $mailKey, 2;
+    my $sql = qq{SELECT maddr.email FROM msgrcpt, maddr WHERE msgrcpt.mail_id='$mail_id' AND };
+    $sql   .= qq{msgrcpt.rseqnum=$rseqnum AND maddr.id=msgrcpt.rid};
+
+    my $res = $self->{dbengine}->query($sql);
+    my @addr = map {
+        $_->{email}
+    } @{$res};
+    return \@addr;
 }
 
 # must have permission to use the amavis socket

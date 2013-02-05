@@ -221,10 +221,6 @@ sub _showClicked
 {
     my ($self, $id) = @_;
     my $key = $self->_idToKey($id);
-    $self->_userAllowedMailKey($key);
-
-    my $mailText = $self->{quarantine}->mailText($key);
-
     return "Modalbox.show('/ViewMail?key=$key', {title: 'title',  wideWindow : true,}); return false",
 }
 

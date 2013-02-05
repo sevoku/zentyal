@@ -19,6 +19,8 @@ package EBox::MailFilter::Amavis::ExternalAccounts;
 
 use EBox::Exceptions::MissingArgument;
 
+# TODO: move wblist methods to another class
+
 sub new
 {
     my ($class, %params) = @_;

@@ -66,7 +66,26 @@ sub _user
 sub _userAllowedMailKey
 {
     my ($self, $mailKey) = @_;
-    # TODO
+    my @rcptAddresses = @{ $self->{quarantine}->rcptAddresses($mailKey) };
+
+    my $allowed = 0;
+    if (@rcptAddresses) {
+        my @userAddresses = @{ $self->_userAllAddresses() };
+        foreach my $rcptAddr (@rcptAddresses) {
+            # remove '+' portion.
+            $rcptAddr =~ s/\+(.*?)@//;  # XXX check if amavis does this itself
+            foreach my $userAddr (@userAddresses) {
+                if ($rcptAddr eq $userAddr) {
+                    $allowed = 1;
+                }
+            }
+        }
+    }
+
+    if (not $allowed) {
+        throw EBox::Exceptions::Internal('User has not permission to access requested message');
+    }
+
 }
 
 1;
