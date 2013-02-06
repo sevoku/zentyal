@@ -49,7 +49,6 @@ sub _clearDB
 sub _usersNotification
 {
     my ($externalAccounts, $quarantine, $from, $ttl) = @_;
-#    my $mailer = _newMailer();
     my @mainAccounts = @{ $externalAccounts->mainAccounts() };
     foreach my $mail (@mainAccounts) {
         my @alias = @{ $externalAccounts->aliasForAccount($mail) };
