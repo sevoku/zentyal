@@ -7,11 +7,11 @@ Standards-Version: 3.9.2
 
 Package: zentyal-mfui
 Architecture: all
-Depends: zentyal-core (>= 3.0.11), zentyal-core (<< 3.0.100), zentyal-firewall, zentyal-mailfilter(>= 3.0.4), libcrypt-rijndael-perl, acl, libhtml-stripscripts-parser-perl, ${misc:Depends}
-Description: Zentyal - User Corner
+Depends: zentyal-core (>= 3.0.11), zentyal-core (<< 3.0.100), zentyal-firewall, zentyal-mailfilter(>= 3.0.4), libcrypt-rijndael-perl, acl, libhtml-stripscripts-parser-perl, sendemail, ${misc:Depends}
+Description: Zentyal - Mail filter user interface
  Zentyal is a Linux small business server that can act as
  a Gateway, Unified Threat Manager, Office Server, Infrastructure
  Manager, Unified Communications Server or a combination of them. One
  single, easy-to-use platform to manage all your network services.
  .
- This module adds a Web Interface for mamaging mail fitler options for external accounts
+ This module adds a Web Interface for mamaging mail filter options for external accounts

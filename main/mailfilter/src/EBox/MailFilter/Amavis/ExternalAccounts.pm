@@ -96,7 +96,6 @@ sub setWBList
     return [$rid => $sid];
 }
 
-# NY
 sub removeWBList
 {
     my ($self, $account, $email) = @_;
@@ -108,7 +107,6 @@ sub removeWBList
     $self->removeWBListByID($accountId, $emailId);
 }
 
-# NT
 sub removeWBListByID
 {
     my ($self, $rid, $sid) = @_;
@@ -224,6 +222,22 @@ sub _removeMailaddrIfNotUsed
     }
 
     $self->{dbengine}->delete('mailaddr', ["id='$id'"]);
+}
+
+sub mainAccounts
+{
+    my ($self) = @_;
+    my $res = $self->{dbengine}->query("select email from users where fullname='main address'");
+    my @accounts = map {  $_->{email} } @{ $res };
+    return \@accounts;
+}
+
+sub aliasForAccount
+{
+    my ($self,$account) = @_;
+    my $res = $self->{dbengine}->query("select email from users where fullname='$account'");
+    my @alias = map {  $_->{email} } @{ $res };
+    return \@alias;
 }
 
 1;

@@ -735,6 +735,10 @@ $sql_select_white_black_list = 'SELECT wb FROM wblist,mailaddr'.
      ' WHERE (wblist.rid=?) AND (wblist.sid=mailaddr.id)'.
      '   AND (mailaddr.email IN (%k))'.
    ' ORDER BY mailaddr.priority DESC';
+
+
+$sql_partition_tag =
+   sub { my($msginfo)=@_; sprintf("%02d",iso8601_week($msginfo->rx_time)) };
 </%def>
 
 <%def perRecipientAndPerSender>

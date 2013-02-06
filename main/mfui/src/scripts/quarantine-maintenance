@@ -1,0 +1,85 @@
+#!/usr/bin/perl
+# Copyright (C) 2013 Zentyal S.L.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License, version 2, as
+# published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+use strict;
+use warnings;
+
+use EBox::MailFilterUI;
+use EBox::MailFilter::Amavis::DBEngine;
+use EBox::MailFilter::Amavis::ExternalAccounts;
+use EBox::MailFilter::Amavis::Quarantine;
+use EBox::Gettext;
+
+my $mfuiUser = EBox::MailFilterUI::MFUI_USER;
+my $mfuiId = getpwnam($mfuiUser);
+if ($mfuiId != $>) {
+    die "This should be run as user $mfuiUser";
+}
+
+my $dbengine = EBox::MailFilterUI::DBEngine->new();
+my $externalAccounts  =  EBox::MailFilter::Amavis::ExternalAccounts->new(dbengine => $dbengine);
+my $quarantine  = EBox::MailFilter::Amavis::Quarantine->new(dbengine => $dbengine);
+my $from = 'formquaratnine@example.org';
+my $dbTtl = 5; # in weeks
+
+_clearDB($quarantine, $dbTtl);
+_usersNotification($externalAccounts, $quarantine, $from, $dbTtl);
+
+sub _clearDB
+{
+    my ($quarantine, $dbTtl) = @_;
+    $quarantine->cleanByTime($dbTtl);
+    $quarantine->cleanDeletedMessages();
+}
+
+sub _usersNotification
+{
+    my ($externalAccounts, $quarantine, $from, $ttl) = @_;
+#    my $mailer = _newMailer();
+    my @mainAccounts = @{ $externalAccounts->mainAccounts() };
+    foreach my $mail (@mainAccounts) {
+        my @alias = @{ $externalAccounts->aliasForAccount($mail) };
+        my $quarantined = scalar @{$quarantine->msgKeys($mail, @alias)};
+        if ($quarantined) {
+            my $mailer;
+            _sendQuarantineNotice($from, $mail, $quarantined, $ttl);
+        }
+    }
+}
+
+sub _sendQuarantineNotice
+{
+    my ($from, $to, $quarantined, $ttl) = @_;
+    my $body;
+    if ($quarantined == 1 ) {
+        $body = __('You have one message in quarantine');
+    } else {
+        $body = __x('You have {n} messages in quarantine',
+                   n => $quarantined);
+    }
+    $body .= "\n";
+    $body .= __x('Please, login into web interface to release or remove them. Quarantine messages are purged after {ttl} weeks.',
+                ttl => $ttl
+               );
+    my $subject = __('Quarantined messages');
+
+    open my $PROC, "| sendEmail -q -f '$from' -t '$to' -u '$subject'  -o tls=no -o fqdn=localhost.localdomain -s 127.0.0.1:10025" or
+        die "Cannot span mail process";
+    print $PROC $body;
+    close $PROC or die "Cannot terminate mail process";
+}
+
+1;

@@ -37,13 +37,13 @@ sub _userEmail
 #    EBox::info("aliases @aliases");
     if (not $self->{externalAccounts}->_accountId($mail)) {
         # add user to table if not exists
-        $self->{externalAccounts}->addAccount($mail, "$user, mail");
+        $self->{externalAccounts}->addAccount($mail, "main address");
     }
 
     # add accounts for aliases
     foreach my $alias (@aliases) {
         if (not $self->{externalAccounts}->_accountId($alias)) {
-            $self->{externalAccounts}->addAccount($alias, "$user, alias");
+            $self->{externalAccounts}->addAccount($alias, "$mail");
         }
     }
 

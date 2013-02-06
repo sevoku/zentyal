@@ -176,4 +176,53 @@ sub _checkMsgIsQuarantined
     }
 }
 
+sub cleanByTime
+{
+    my ($self, $weeksTTL) = @_;
+    ($weeksTTL < 1) and
+        throw EBox::Exceptions::Internal("Week ttls mut be greater than one");
+    ($weeksTTL > 50) and
+        throw EBox::Exceptions::Internal("Week ttls too big");
+    my $ourWeek = _iso8601_week(time());
+    my $where;
+    if ($ourWeek > $weeksTTL) {
+        my $leTarget = $ourWeek - $weeksTTL;
+        $where = "((partition_tag <= $leTarget) AND (partition_tag > $ourWeek))";
+    } elsif ($ourWeek == $weeksTTL) {
+        my $geTarget = $ourWeek + 1;
+        $where = "partition_tag >= $geTarget";
+    } else {
+        my $gtTarget = $ourWeek;
+        my $leTarget = 54 + $ourWeek - $weeksTTL; # 54 - max number of weeks
+        $where = "(partition_tag > $gtTarget) AND (partition_tag <= $leTarget)";
+    }
+
+    my @partitionTagTables = qw(maddr msgs msgrcpt quarantine);
+    foreach my $table (@partitionTagTables) {
+        my $sqlDelete = qq{DELETE FROM $table WHERE $where};
+        $self->{dbengine}->do($sqlDelete);
+    }
+
+}
+
+sub cleanDeletedMessages
+{
+    my ($self) = @_;
+    my $sql = qq{DELETE FROM msgrcpt where rs='D'};
+    my $res = $self->{dbengine}->do($sql);
+    # TODO delete for msgs table if needed?
+}
+
+sub _iso8601_week
+{
+  my($unix_time) = @_;
+  my($y,$dowm0,$doy0) = (localtime($unix_time))[5,6,7];
+  $y += 1900; $dowm0--; $dowm0=6 if $dowm0<0;  # normalize, Monday==0
+  my($dow0101) = ($dowm0 - $doy0 + 53*7) % 7;  # dow Jan 1
+  my($wn) = int(($doy0 + $dow0101) / 7);
+  if ($dow0101 < 4) { $wn++ }
+  if ($wn == 0) { $wn = iso8601_year_is_long($y-1) ? 53 : 52 }
+  elsif ($wn == 53 && !iso8601_year_is_long($y)) { $wn = 1 }
+  $wn;
+}
 1;

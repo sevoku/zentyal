@@ -160,8 +160,8 @@ CREATE TABLE IF NOT EXISTS msgs (
   subject    varchar(255)  CHARACTER SET utf8 COLLATE utf8_bin  DEFAULT '',
                                         -- mail Subject header field, UTF8
   host       varchar(255)  NOT NULL,    -- hostname where amavisd is running
-  PRIMARY KEY (partition_tag,mail_id)
--- FOREIGN KEY (sid) REFERENCES maddr(id) ON DELETE RESTRICT
+  PRIMARY KEY (partition_tag,mail_id),
+  FOREIGN KEY (sid) REFERENCES maddr(id) ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 CREATE INDEX msgs_idx_sid      ON msgs (sid);
 CREATE INDEX msgs_idx_mess_id  ON msgs (message_id); -- useful with pen pals
@@ -186,9 +186,9 @@ CREATE TABLE IF NOT EXISTS msgrcpt (
   wl         char(1)  DEFAULT ' ',       -- sender whitelisted by this recip
   bspam_level float,                     -- per-recipient (total) spam level
   smtp_resp  varchar(255)  DEFAULT '',   -- SMTP response given to MTA
-  PRIMARY KEY (partition_tag,mail_id,rseqnum)
--- FOREIGN KEY (rid)     REFERENCES maddr(id)     ON DELETE RESTRICT,
--- FOREIGN KEY (mail_id) REFERENCES msgs(mail_id) ON DELETE CASCADE
+  PRIMARY KEY (partition_tag,mail_id,rseqnum),
+  FOREIGN KEY (rid)     REFERENCES maddr(id)     ON DELETE RESTRICT,
+  FOREIGN KEY (mail_id) REFERENCES msgs(mail_id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 CREATE INDEX msgrcpt_idx_mail_id  ON msgrcpt (mail_id);
 CREATE INDEX msgrcpt_idx_rid      ON msgrcpt (rid);
@@ -201,8 +201,8 @@ CREATE TABLE IF NOT EXISTS quarantine (
   mail_id    varbinary(16) NOT NULL,     -- long-term unique mail id
   chunk_ind  integer unsigned NOT NULL,  -- chunk number, starting with 1
   mail_text  blob          NOT NULL,     -- store mail as chunks of octets
-  PRIMARY KEY (partition_tag,mail_id,chunk_ind)
--- FOREIGN KEY (mail_id) REFERENCES msgs(mail_id) ON DELETE CASCADE
+  PRIMARY KEY (partition_tag,mail_id,chunk_ind),
+  FOREIGN KEY (mail_id) REFERENCES msgs(mail_id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 -- field msgrcpt.rs is primarily intended for use by quarantine management
