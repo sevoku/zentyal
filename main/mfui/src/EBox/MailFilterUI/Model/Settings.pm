@@ -23,6 +23,7 @@ use EBox::Validate qw(:all);
 use EBox::Types::Port;
 use EBox::Types::Host;
 use EBox::Types::Text;
+use EBox::Types::MailAddress;
 
 use constant FW_SERVICE => 'mailfilter_ui';
 
@@ -59,6 +60,12 @@ sub _table
             'editable' => 1,
             'defaultValue' => 'ad.example.com',
         ),
+        new EBox::Types::MailAddress(
+            fieldName => 'adminEmail',
+            printableName => __('Quarantine notification reply address'),
+            editable => 1,
+            defaultValue => 'noreply@example.org'
+        )
     );
 
     my $dataTable =

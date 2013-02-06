@@ -23,6 +23,8 @@ use EBox::MailFilter::Amavis::ExternalAccounts;
 use EBox::MailFilter::Amavis::Quarantine;
 use EBox::Gettext;
 
+my ($from) = @ARGV;
+
 my $mfuiUser = EBox::MailFilterUI::MFUI_USER;
 my $mfuiId = getpwnam($mfuiUser);
 if ($mfuiId != $>) {
@@ -32,7 +34,6 @@ if ($mfuiId != $>) {
 my $dbengine = EBox::MailFilterUI::DBEngine->new();
 my $externalAccounts  =  EBox::MailFilter::Amavis::ExternalAccounts->new(dbengine => $dbengine);
 my $quarantine  = EBox::MailFilter::Amavis::Quarantine->new(dbengine => $dbengine);
-my $from = 'formquaratnine@example.org';
 my $dbTtl = 5; # in weeks
 
 _clearDB($quarantine, $dbTtl);

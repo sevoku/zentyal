@@ -33,6 +33,7 @@ use constant MFUI_REDIS_PASS => '/var/lib/zentyal-mfui/conf/redis.passwd';
 use constant LDAP_CONF => '/var/lib/zentyal-mfui/ldap.conf';
 use constant AMAVIS_HOME => '/var/lib/amavis';
 use constant AMAVIS_SOCKET =>  AMAVIS_HOME .  '/amavisd.sock';
+use constant CRON_FILE    => '/etc/cron.d/zentyal-mfui';
 
 sub _create
 {
@@ -193,6 +194,13 @@ sub _setConf
         'setfacl -m u:' . MFUI_USER .':rx '. AMAVIS_HOME,
         'setfacl -m u:' . MFUI_USER .':rw '. AMAVIS_SOCKET
        );
+
+    # Create cron file
+    my $adminEmail = $settings->value('adminEmail');
+    EBox::Module::Base::writeConfFileNoCheck(CRON_FILE,
+                                             "mfui/zentyal-mfui.cron.mas",
+                                             [fromAddr => $adminEmail]
+                                                );
 }
 
 # Method: menu
