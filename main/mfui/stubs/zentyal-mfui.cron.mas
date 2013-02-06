@@ -1,9 +1,12 @@
 <%args>
 $fromAddr
-$hour => 01
+$hour => 1
 $min  => 19
 </%args>
+SHELL=/bin/sh
+PATH=/usr/bin:/bin
+
 # clean database and send quarantine emails to users
-<% $min %>  <% $hour %> * * * zentyal-mfui /usr/share/zentyal-mfui/quarantine-maintenance <% $fromAddr %>
+<% $min %> <% $hour %> * * * zentyal-mfui /usr/share/zentyal-mfui/quarantine-maintenance <% $fromAddr %>
 
 
