@@ -60,7 +60,7 @@ use constant MAX_SCRIPT_SESSION => 10; # In seconds
 #               - When session file cannot be opened to write
 sub _savesession
 {
-    my ($user, $passwd, $mail, $sid, $key) = @_;
+    my ($user, $passwd, $mail, $sid, $key, @aliases) = @_;
 
     if(not defined($sid)) {
         my $rndStr;
@@ -102,7 +102,7 @@ sub _savesession
     # Truncate the file after locking
     truncate($sidFile, 0);
     if (defined $sid) {
-       my $cookie = join("\t", $sid, $encodedcryptedpass, time(), $mail);
+       my $cookie = join("\t", $sid, $encodedcryptedpass, time(), $mail, @aliases);
        print $sidFile $cookie;
     }
     # Release the lock
@@ -126,16 +126,16 @@ sub _updatesession
         or throw EBox::Exceptions::Lock('EBox::MailFilterUI::Auth');
 
     my $sess_info = <$sidFile>;
-    my ($sid, $cryptedpass, $lastime, $mail);
+    my ($sid, $cryptedpass, $lastime, $mail, @aliases);
     if (defined $sess_info) {
-        ($sid, $cryptedpass, $lastime, $mail) = split (/\t/, $sess_info)
+        ($sid, $cryptedpass, $lastime, $mail, @aliases) = split (/\t/, $sess_info)
      }
 
     # Truncate the file
     truncate($sidFile, 0);
     seek($sidFile, 0, 0);
     if (defined $sid) {
-       my $cookie = join("\t", $sid, $cryptedpass, time(), $mail);
+       my $cookie = join("\t", $sid, $cryptedpass, time(), $mail, @aliases);
        print $sidFile $cookie;
     }
     # Release the lock
@@ -161,7 +161,7 @@ sub _updatesession
 sub checkPasswordAndGetMail # (user, password)
 {
     my ($class, $user, $passwd) = @_;
-    return 'user1@mail1.com';     # DDD
+    return ['user1@mail1.com', 'alias1@mail1.com', 'alias2@domainalias.com']  ;     # DDD
 
     my $CONF_FILE = EBox::MailFilterUI->LDAP_CONF;
 
@@ -172,12 +172,12 @@ sub checkPasswordAndGetMail # (user, password)
 
      if (not $url) {
       # no auth possible
-      return 0;
+      return undef;
     }
 
     my $ldap = $class->_checkLdapConn($user, $passwd, $url);
     if (not $ldap){
-        return 0;
+        return undef;
     }
 
     # XXX add exception/error handling
@@ -194,21 +194,46 @@ sub checkPasswordAndGetMail # (user, password)
     my $entry = ($result->entries)[0];
     my $baseDN = $entry->get_value('defaultNamingContext');
 
+    my @mailAccountAttrs = ('mail', 'mailNickname', 'proxyAddresses', 'alias');
     # get user mail
     $result = $ldap->search(
         base => $baseDN,
         filter => "&(objectClass=person)(userPrincipalName=$user)",
         scope => 'sub',
-        attrs => ['mail'],
+        attrs => [@mailAccountAttrs],
        );
     if ($result->count ==0 ) {
         return undef;
     }
     $entry =  ($result->entries)[0];
 
-    # get mail
-    my $mail = $entry->get_value('mail');
-    return $mail;
+    my %seenAccounts = ();
+    my @accounts;
+    foreach my $attr (@mailAccountAttrs) {
+       my @values = $entry->get_value($attr);
+       if ($attr eq 'proxyAddresses') {
+          # proxyAddreeses can have complicate values
+          @values = map { split ';|:', $_ } @values;
+          @values = grep { ($_ ne 'SMTP') and ($_ ne 'smtp')  } @values;
+       }
+       # remove non=email addresses
+       @values = grep { $_ =~ m/@/} @values;
+
+       foreach my $val (@values) {
+          if ($seenAccounts{$val}) {
+              next;
+          }
+          push @accounts, $val;
+          $seenAccounts{$val} = 1;
+       }
+    }
+
+    if (not @accounts) {
+       # no mail addresses return
+       return undef;
+    }
+
+    return \@accounts;
 }
 
 # for now we only support AD-style login
@@ -242,10 +267,8 @@ sub updatePassword
     my $r = Apache2::RequestUtil->request();
 
     my $session_info = EBox::MailFilterUI::Auth->key($r);
-    my ($sid, $key, $time, $mail) = split '\t', $session_info;
-#    my $sid = substr($session_info, 0, 32);
-#    my $key = substr($session_info, 32, 32);
-    _savesession($user, $passwd, $mail, $sid, $key);
+    my ($sid, $key, $time, $mail, @aliases) = split '\t', $session_info;
+    _savesession($user, $passwd, $mail, $sid, $key, @aliases);
 }
 
 # Method: authen_cred
@@ -256,8 +279,8 @@ sub authen_cred  # (request, user, password)
 {
     my ($class, $r, $user, $passwd) = @_;
 
-    my $mail = $class->checkPasswordAndGetMail($user, $passwd);
-    unless ($mail) {
+    my $addresses = $class->checkPasswordAndGetMail($user, $passwd);
+    unless ($addresses) {
         EBox::initLogger('mfui-log.conf');
         my $log = EBox->logger();
         my $ip  = $r->connection->remote_host();
@@ -265,7 +288,8 @@ sub authen_cred  # (request, user, password)
         return;
     }
 
-    return _savesession($user, $passwd, $mail, undef, undef);
+    my ($mail, @aliases) = @{ $addresses };
+    return _savesession($user, $passwd, $mail, undef, undef, @aliases);
 }
 
 # Method: credentials
