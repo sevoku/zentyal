@@ -140,11 +140,7 @@ sub ids
 {
     my ($self) = @_;
     my @addrs = @{ $self->_userAllAddresses() };
-    my @ids;
-    foreach my $addr (@addrs) {
-        push @ids, @{ $self->{quarantine}->msgKeys($addr)  };
-    }
-
+    my @ids =  @{ $self->{quarantine}->msgKeys(@addrs)};
     return \@ids;
 }
 
