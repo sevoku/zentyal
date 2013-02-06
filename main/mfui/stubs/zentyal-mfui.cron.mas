@@ -1,0 +1,9 @@
+<%args>
+$fromAddr
+$hour => 01
+$min  => 19
+</%args>
+# clean database and send quarantine emails to users
+<% $min %>  <% $hour %> * * * zentyal-mfui /usr/share/zentyal-users/slave-sync <% $fromAddr %>
+
+
