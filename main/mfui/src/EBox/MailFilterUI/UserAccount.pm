@@ -23,7 +23,7 @@ use EBox::MailFilterUI;
 # TODO get somehow the users email
 sub _userEmail
 {
-    my ($self, $returnId) = @_;
+    my ($self, $includeAlias) = @_;
 
     my $user = $self->_user();
     my $sessionFile = EBox::MailFilterUI::usersessiondir() . $user;
@@ -31,29 +31,52 @@ sub _userEmail
     if ($? != 0) {
        throw EBox::Exceptions::Internal('Error getting user session info');
     }
-    my ($sid, $key, $time, $mail) = split '\t', $sessionKey;
+    EBox::info("skey $sessionKey");
+    my ($sid, $key, $time, $mail, @aliases) = split '\t', $sessionKey;
+#    EBox::info("mail $mail");
+#    EBox::info("aliases @aliases");
     if (not $self->{externalAccounts}->_accountId($mail)) {
         # add user to table if not exists
-        $self->{externalAccounts}->addAccount($mail, $user);
+        $self->{externalAccounts}->addAccount($mail, "$user, mail");
     }
 
-    return $mail;
+    # add accounts for aliases
+    foreach my $alias (@aliases) {
+        if (not $self->{externalAccounts}->_accountId($alias)) {
+            $self->{externalAccounts}->addAccount($alias, "$user, alias");
+        }
+    }
+
+    if ($includeAlias) {
+        return [$mail, @aliases];
+    } else {
+        return $mail;
+    }
+
 }
 
 sub _userAllAddresses
 {
     my ($self) = @_;
-    # TODO this hould resturn usermail and alias
-    my $addr = $self->_userEmail();
-    my @mockAlias = qw(alias1@mail1.com alias2@domainalias.com);
-    return [$addr, @mockAlias];
+    return $self->_userEmail(1);
 }
 
 sub _rid
 {
     my ($self) = @_;
-    my $rcpt = $self->_userEmail(); # _userMail will create records if rid not in db
-    return $self->{externalAccounts}->_accountId($rcpt);
+    my ($rid) = @{ $self->_userAllRids() };
+    return $rid;
+}
+
+sub _userAllRids
+{
+    my ($self) = @_;
+    my @rids;
+    my @accounts = @{ $self->_userAllAddresses() };
+    foreach my $acc (@accounts) {
+        push @rids, $self->{externalAccounts}->_accountId($acc);
+    }
+    return \@rids;
 }
 
 sub _user

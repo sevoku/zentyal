@@ -123,23 +123,37 @@ sub addTypedRow
     my ($self, $paramsRef, %optParams) = @_;
     my $sender = $paramsRef->{sender}->value();
     my $policy = $paramsRef->{policy}->value();
-    my $rcpt = $self->_userEmail();
-    my $ret = $self->{externalAccounts}->setWBList($rcpt, $sender, $policy);
+    my @rcpts = @{$self->_userAllAddresses};
+    my $mainAccountRet;
+    foreach my $rcpt (@rcpts) {
+        my $ret = $self->{externalAccounts}->setWBList($rcpt, $sender, $policy);
+        if (not $mainAccountRet) {
+            $mainAccountRet = $ret;
+        }
+    }
+
     $self->setMessage(__('Sender policy added') );
-    return $ret->[0] . 'S' . $ret->[1];
+    return $mainAccountRet->[0] . 'S' . $mainAccountRet->[1];
 }
 
 sub setTypedRow
 {
     my ($self, $id, $paramsRef, %optParams) = @_;
+    my ($mainRid, $sid) = split 'S', $id, 2;
     my $sender = $paramsRef->{sender}->value();
     my $policy = $paramsRef->{policy}->value();
     my $rcpt = $self->_userEmail();
 
-    my ($rid, $sid) = split 'S', $id, 2;
-    $self->{externalAccounts}->removeWBListByID($rid, $sid);
+    my @rids = @{ $self->_userAllRids };
+    foreach my $rid (@rids) {
+        $self->{externalAccounts}->removeWBListByID($rid, $sid);
+    }
 
-    $self->{externalAccounts}->setWBList($rcpt, $sender, $policy);
+    my @rcpts = @{ $self->_userAllAddresses() };
+    foreach my $rcpt (@rcpts) {
+        $self->{externalAccounts}->setWBList($rcpt, $sender, $policy);
+    }
+
     # return id?
     $self->setMessage(__('Sender policy modified') );
 }
@@ -147,6 +161,7 @@ sub setTypedRow
 sub removeRow
 {
     my ($self, $id, $force) = @_;
+    my ($mainRid, $sid) = split 'S', $id, 2;
 
     unless (defined($id)) {
         throw EBox::Exceptions::MissingArgument(
@@ -160,8 +175,11 @@ sub removeRow
           );
     }
 
-    my ($rid, $sid) = split 'S', $id, 2;
-    $self->{externalAccounts}->removeWBListByID($rid, $sid);
+    my @rids = @{  $self->_userAllRids };
+    foreach my $rid (@rids) {
+        $self->{externalAccounts}->removeWBListByID($rid, $sid);
+    }
+
     $self->setMessage(__('Sender policy removed') );
 }
 
