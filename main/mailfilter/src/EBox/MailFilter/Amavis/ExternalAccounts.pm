@@ -240,4 +240,14 @@ sub aliasForAccount
     return \@alias;
 }
 
+sub removeExpiredAlias
+{
+    my ($self, $account, @actualAlias) = @_;
+    my $actualAliases = join ',', map {
+        "'$_'"
+    } @actualAlias;
+    my $sql = qq{delete from users where (fullname='$account') and (email not in ($actualAliases))};
+    $self->{dbengine}->do($sql);
+}
+
 1;

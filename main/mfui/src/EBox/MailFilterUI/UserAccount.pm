@@ -46,6 +46,9 @@ sub _userEmail
             $self->{externalAccounts}->addAccount($alias, "$mail");
         }
     }
+    if (@aliases) {
+        $self->{externalAccounts}->removeExpiredAlias($mail, @aliases);
+    }
 
     if ($includeAlias) {
         return [$mail, @aliases];
