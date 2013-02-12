@@ -161,7 +161,6 @@ sub _updatesession
 sub checkPasswordAndGetMail # (user, password)
 {
     my ($class, $user, $passwd) = @_;
-    return ['user1@mail1.com', 'alias1@mail1.com', 'alias2@domainalias.com']  ;     # DDD
 
     my $CONF_FILE = EBox::MailFilterUI->LDAP_CONF;
 
@@ -205,7 +204,7 @@ sub checkPasswordAndGetMail # (user, password)
     if ($result->count ==0 ) {
         return undef;
     }
-    $entry =  ($result->entries)[0];
+    $entry = ($result->entries)[0];
 
     my %seenAccounts = ();
     my @accounts;
@@ -216,7 +215,7 @@ sub checkPasswordAndGetMail # (user, password)
           @values = map { split ';|:', $_ } @values;
           @values = grep { ($_ ne 'SMTP') and ($_ ne 'smtp')  } @values;
        }
-       # remove non=email addresses
+       # remove non-email addresses
        @values = grep { $_ =~ m/@/} @values;
 
        foreach my $val (@values) {
