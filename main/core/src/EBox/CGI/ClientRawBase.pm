@@ -40,25 +40,8 @@ use constant DATA_IN_USE_STATUS => '501';
 ##      template [optional]
 sub new # (title=?, error=?, msg=?, cgi=?, template=?)
 {
-    my $class = shift;
-    my %opts = @_;
-
-    my $self = $class->SUPER::new(@_);
-    my $namespace = delete $opts{'namespace'};
-    my $tmp = $class;
-    $tmp =~ s/^(.*?)::CGI::(.*?)(?:::)?(.*)//;
-    if(not $namespace) {
-        $namespace = $1;
-    }
-    $self->{namespace} = $namespace;
-    $self->{module} = $2;
-    $self->{cginame} = $3;
-    if (defined($self->{cginame})) {
-        $self->{url} = $self->{module} . "/" . $self->{cginame};
-    } else {
-        $self->{url} = $self->{module} . "/Index";
-    }
-
+    my ($class, @opts) = @_;
+    my $self = $class->SUPER::new(@opts);
     bless($self, $class);
     return $self;
 }

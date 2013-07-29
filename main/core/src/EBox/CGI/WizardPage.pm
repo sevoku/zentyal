@@ -58,13 +58,7 @@ sub new # (title=?, error=?, msg=?, cgi=?, template=?)
     my %opts = @_;
 
     my $self = $class->SUPER::new(@_);
-    my $namespace = delete $opts{'namespace'};
-    my $tmp = $class;
-    $tmp =~ s/^EBox::(.*?)::CGI::.*$//;
-    if(not $namespace) {
-        $namespace = $1;
-    }
-    $self->{namespace} = $namespace;
+    $class =~ m/^EBox::(.*?)::CGI::.*$/;
     $self->{module} = lc $1;
 
     bless($self, $class);
