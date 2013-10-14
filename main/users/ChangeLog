@@ -1,3 +1,6 @@
+HEAD
+	+ Adapted cloud sync to changes in user modules
+	+ Added childrenObjectClass parameter to EBox::Users::LdapObject::children
 3.3
 	+ Fixed wrong path in ExternalAD::connectWithKerberos
 	+ Update names in tree view when either user or contact is edited
