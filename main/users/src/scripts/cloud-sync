@@ -58,15 +58,14 @@ EBox::debug("Asking for user list");
 my $res = $rest->GET('/v1/users/users/');
 
 # local and remote user list
-my $lusers = $users->users();
+my $userContainer  = EBox::Users::User->defaultContainer();
+my $lusers = $userContainer->children(EBox::Users::User->mainObjectClass());
 my $rusers = $res->data();
 
 my $rusernames;
 
 EBox::debug('Local users:  ' . @$lusers . ' users');
 EBox::debug('Remote users: ' . @$rusers . ' users');
-
-my $userContainer = EBox::Users::User->defaultContainer();
 
 for my $ruser (@{$rusers}) {
     # add it to rusernames dict
@@ -149,14 +148,14 @@ EBox::debug("Asking for group list");
 $res = $rest->GET('/v1/users/groups/');
 
 # local and remote user list
-my $lgroups = $users->groups();
+my $groupContainer = EBox::Users::Group->defaultContainer();
+my $lgroups = $groupContainer->children(EBox::Users::Group->mainObjectClass());
 my $rgroups = $res->data();
 my $rgroupnames;
 
 EBox::debug('Local groups:  ' . @$lgroups . ' groups');
 EBox::debug('Remote groups: ' . @$rgroups . ' groups');
 
-my $groupContainer = EBox::Users::Group->defaultContainer();
 for my $rgroup (@{$rgroups}) {
     # add it to rgroupames dict
     $rgroupnames->{$rgroup->{name}} = 1;
