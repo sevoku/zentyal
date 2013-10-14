@@ -33,7 +33,7 @@ sub new
     my $self = $class->SUPER::new(name => 'zentyal-cloud');
 
     $self->{usersMod} = EBox::Global->modInstance('users');
-    $self->{usersContainer} = $self->{usersMod}->userClass()->defaultContainer();
+    $self->{usersContainerDn} = $self->{usersMod}->userClass()->defaultContainer()->dn();
 
     bless($self, $class);
     return $self;
@@ -43,7 +43,7 @@ sub _addUser
 {
     my ($self, $user, $pass) = @_;
 
-    return if ($user->baseDn() ne $self->{usersContainer}->dn());
+    return if ($user->baseDn() ne $self->{usersContainerDn});
 
     # refresh user info to avoid cache problems with passwords:
     $user = $self->{usersMod}->userByUID($user->name());
@@ -69,7 +69,7 @@ sub _modifyUser
 {
     my ($self, $user, $pass) = @_;
 
-    return if ($user->baseDn() ne $self->{usersContainer}->dn());
+    return if ($user->baseDn() ne $self->{usersContainerDn});
 
     # refresh user info to avoid cache problems with passwords:
     $user = $self->{usersMod}->userByUID($user->name());
@@ -92,7 +92,7 @@ sub _delUser
 {
     my ($self, $user) = @_;
 
-    return if ($user->baseDn() ne $self->{usersContainer}->dn());
+    return if ($user->baseDn() ne $self->{usersContainerDn});
 
     my $uid = $user->get('uid');
     $self->RESTClient->DELETE("/v1/users/users/$uid", retry => 1);
@@ -105,7 +105,7 @@ sub _addGroup
 
     return if (not $group->isSecurityGroup());
 
-    return unless ($group->isInDefaultContainer());
+    return unless ($self->_groupIsInUsersDefaultContainer($group));
 
     my $groupinfo = {
         name        => $group->name(),
@@ -125,7 +125,7 @@ sub _modifyGroup
 
     return if (not $group->isSecurityGroup());
 
-    return unless ($group->isInDefaultContainer());
+    return unless ($self->_groupIsInUsersDefaultContainer($group));
 
     # FIXME: We should sync contacts too!
     my @members = map { $_->name() } @{$group->users()};
@@ -146,11 +146,17 @@ sub _delGroup
 {
     my ($self, $group) = @_;
 
-    return unless ($group->isInDefaultContainer());
+    return unless ($self->_groupIsInUsersDefaultContainer($group));
 
     my $name = $group->get('cn');
     $self->RESTClient->DELETE("/v1/users/groups/$name", retry => 1);
     return 0;
+}
+
+sub _groupIsInUsersDefaultContainer
+{
+    my ($self, $group) = @_;
+    return $group->parent()->dn() eq  $self->{usersContainerDn};
 }
 
 sub RESTClient
