@@ -57,8 +57,11 @@ my $rest = $rs->REST();
 EBox::debug("Asking for user list");
 my $res = $rest->GET('/v1/users/users/');
 
-# local and remote user list
+# until multiOU support is included in the server side all users and groups come
+# and go to EBox::Users
 my $userContainer  = EBox::Users::User->defaultContainer();
+
+# local and remote user list
 my $lusers = $userContainer->children(EBox::Users::User->mainObjectClass());
 my $rusers = $res->data();
 
@@ -148,8 +151,7 @@ EBox::debug("Asking for group list");
 $res = $rest->GET('/v1/users/groups/');
 
 # local and remote user list
-my $groupContainer = EBox::Users::Group->defaultContainer();
-my $lgroups = $groupContainer->children(EBox::Users::Group->mainObjectClass());
+my $lgroups = $userContainer->children(EBox::Users::Group->mainObjectClass());
 my $rgroups = $res->data();
 my $rgroupnames;
 
@@ -168,7 +170,7 @@ for my $rgroup (@{$rgroups}) {
 
             my %args = (
                 name          => $rgroup->{name},
-                parent        => $groupContainer,
+                parent        => $userContainer,
                 description   => $rgroup->{description},
                 gidNumber     => $rgroup->{gid},
                 isSystemGroup => 0,
