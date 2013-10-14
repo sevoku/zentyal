@@ -66,6 +66,8 @@ my $rusernames;
 EBox::debug('Local users:  ' . @$lusers . ' users');
 EBox::debug('Remote users: ' . @$rusers . ' users');
 
+my $userContainer = EBox::Users::User->defaultContainer();
+
 for my $ruser (@{$rusers}) {
     # add it to rusernames dict
     $rusernames->{$ruser->{name}} = 1;
@@ -109,8 +111,9 @@ for my $ruser (@{$rusers}) {
         } else {
             EBox::info('Local user "' . $ruser->{name} . '" does not exist, creating...');
             my %user;
-            $user{user} = $ruser->{name};
-            $user{name} = $ruser->{firstname};
+            $user{uid}     = $ruser->{name};
+            $user{parent}  = $userContainer;
+            $user{name}    = $ruser->{firstname};
             $user{surname} = $ruser->{lastname};
             if ($user{name}) {
                 $user{fullname} = $user{name} . ' ' . $user{surname};
@@ -123,6 +126,7 @@ for my $ruser (@{$rusers}) {
             $user{comment} = $ruser->{description};
             $user{isSystemUser} = 0;
             $user{ignoreSlaves} = IGNORE;
+
             EBox::Users::User->create(%user);
         }
     } otherwise {
@@ -152,6 +156,7 @@ my $rgroupnames;
 EBox::debug('Local groups:  ' . @$lgroups . ' groups');
 EBox::debug('Remote groups: ' . @$rgroups . ' groups');
 
+my $groupContainer = EBox::Users::Group->defaultContainer();
 for my $rgroup (@{$rgroups}) {
     # add it to rgroupames dict
     $rgroupnames->{$rgroup->{name}} = 1;
@@ -164,6 +169,7 @@ for my $rgroup (@{$rgroups}) {
 
             my %args = (
                 name          => $rgroup->{name},
+                parent        => $groupContainer,
                 description   => $rgroup->{description},
                 gidNumber     => $rgroup->{gid},
                 isSystemGroup => 0,
