@@ -32,6 +32,7 @@ use constant CLIENTSCONFFILE => '/etc/freeradius/clients.conf';
 use constant EAPCONFFILE => '/etc/freeradius/eap.conf';
 use constant DEFAULTSRVCONFFILE => '/etc/freeradius/sites-available/default';
 use constant INNERTUNNELSRVCONFFILE => '/etc/freeradius/sites-available/inner-tunnel';
+use constant MSCHAP_CONF_FILE       => '/etc/freeradius/modules/mschap';
 
 # Constructor: _create
 #
@@ -195,11 +196,13 @@ sub _setConf
     my ($self) = @_;
 
     $self->writeConfFile(RADIUSDCONFFILE, "radius/radiusd.conf.mas",
-                         undef, { 'uid' => 'root', 'gid' => 'freerad', mode => '640' });
+                         [], { 'uid' => 'root', 'gid' => 'freerad', mode => '640' });
     $self->writeConfFile(DEFAULTSRVCONFFILE, "radius/default.mas",
-                         undef, { 'uid' => 'root', 'gid' => 'freerad', mode => '640' });
+                         [], { 'uid' => 'root', 'gid' => 'freerad', mode => '640' });
     $self->writeConfFile(INNERTUNNELSRVCONFFILE, "radius/inner-tunnel.mas",
-                         undef, { 'uid' => 'root', 'gid' => 'freerad', mode => '640' });
+                         [], { 'uid' => 'root', 'gid' => 'freerad', mode => '640' });
+    $self->writeConfFile(MSCHAP_CONF_FILE, 'radius/mschap.mas',
+                         [], { 'uid' => 'root', 'gid' => 'freerad', mode => '640' });
 
     $self->_setUsers();
     $self->_setEAP();
