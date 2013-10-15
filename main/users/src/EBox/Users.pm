@@ -1819,8 +1819,7 @@ sub slaves
 sub master
 {
     my ($self) = @_;
-    my $row = $self->model('Master')->row();
-    return $row->elementByName('master')->value();
+    return $self->model('Master')->master();
 }
 
 # SyncProvider implementation
