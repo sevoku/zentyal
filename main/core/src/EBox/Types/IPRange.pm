@@ -255,11 +255,14 @@ sub _setValue # (value)
 sub addresses
 {
     my ($self) = @_;
+    return $self->addressesFromBeginToEnd($self->begin(), $self->end());
+}
 
+sub addressesFromBeginToEnd
+{
+    my ($class, $begin, $end) = @_;
     my @addresses;
-
-    my $ip = $self->begin();
-    my $end = $self->end();
+    my $ip = $begin;
     my @parts = split '\.', $ip;
 
     if ($parts[3] == 0) {
