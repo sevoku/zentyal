@@ -38,7 +38,7 @@ sub _create
                                       printableName => __('Objects'),
                                       @_);
 
-    $self->{members} = {};
+    $self->{membersCache} = {};
     bless($self, $class);
 
     return $self;
@@ -113,16 +113,24 @@ sub objectMembers # (object)
         throw EBox::Exceptions::MissingArgument("id");
     }
 
-    if (exists $self->{members}->{$id}) {
-        return $self->{members}->{$id};
+    if (not exists $self->{membersCache}->{$id}) {
+        my $object = $self->model('ObjectTable')->row($id);
+        return undef unless defined($object);
+
+        my $members =  $object->subModel('members')->members();
+        $self->{membersCache}->{$id} = $members;
     }
 
-    my $object = $self->model('ObjectTable')->row($id);
-    return undef unless defined($object);
+    return $self->{membersCache}->{$id};
+}
 
-    my $members =  $object->subModel('members')->members();
-    $self->{members}->{$id} = $members;
-    return $members;
+sub clearMembersCache
+{
+    my ($self, $id) = @_;
+    if (exists $self->{membersCache}->{$id}) {
+        EBox::debug("Cache remove $id");
+        delete $self->{membersCache}->{$id};
+    }
 }
 
 # objectAddresses
@@ -148,10 +156,11 @@ sub objectAddresses
         throw EBox::Exceptions::MissingArgument("id");
     }
 
-    my $object = $self->model('ObjectTable')->row($id);
-    return undef unless defined($object);
-
-    return $object->subModel('members')->addresses(@params);
+    my $members = $self->objectMembers($id);
+    if (not $members) {
+        return undef;
+    }
+    return $members->addresses(@params);
 }
 
 # Method: objectDescription
