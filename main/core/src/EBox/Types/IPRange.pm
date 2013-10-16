@@ -216,7 +216,7 @@ sub _paramIsSet
     my $begin =  $self->fieldName() . '_begin';
     my $end =  $self->fieldName() . '_end';
 
-    unless ( defined($params->{$begin}) and defined($params->{$end})) {
+    unless (defined($params->{$begin}) and defined($params->{$end})) {
         return 0;
     }
 
@@ -290,8 +290,8 @@ sub addressesFromBeginToEnd
                 $parts[2] += 1;
             } else {
                 $parts[2] = 0;
-                if ($parts[1] < 255 ) {
-                    $parts[1]+= 1;
+                if ($parts[1] < 255) {
+                    $parts[1] += 1;
                 } else {
                     $parts[1] = 0;
                     if ($parts[0] < 255) {
@@ -306,16 +306,6 @@ sub addressesFromBeginToEnd
 
         $ip = join '.', @parts;
     }
-
-    # my $ipRange = $self->_rangeObject();
-
-    # my @addresses;
-    # do {
-    #     my $ip = $ipRange->ip();
-    #     unless ($ip =~ /\.0$/) {
-    #         push (@addresses, $ip);
-    #     }
-    # } while (++$ipRange);
 
     return \@addresses;
 }

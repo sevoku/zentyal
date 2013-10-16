@@ -265,6 +265,7 @@ sub members
 sub addresses
 {
     my ($self, @params) = @_;
+
     my $members = $self->members();
     return $members->addresses(@params);
 }

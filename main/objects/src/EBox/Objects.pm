@@ -114,7 +114,7 @@ sub objectMembers # (object)
     my $object = $self->model('ObjectTable')->row($id);
     return undef unless defined($object);
 
-    return  $object->subModel('members')->members();
+    return $object->subModel('members')->members();
 }
 
 # objectAddresses
@@ -144,6 +144,7 @@ sub objectAddresses
     if (not $members) {
         return undef;
     }
+
     return $members->addresses(@params);
 }
 

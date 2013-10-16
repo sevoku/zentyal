@@ -86,7 +86,7 @@ sub addresses
             } else {
                 map {
                     "$member/32"
-                } @{  $member->{addresses} }
+                } @{ $member->{addresses} }
             }
         } else {
             ()
