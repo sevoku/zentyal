@@ -256,15 +256,63 @@ sub addresses
 {
     my ($self) = @_;
 
-    my $ipRange = $self->_rangeObject();
-
     my @addresses;
-    do {
-        my $ip = $ipRange->ip();
-        unless ($ip =~ /\.0$/) {
-            push (@addresses, $ip);
+
+    my $ip = $self->begin();
+    my $end = $self->end();
+    my @parts = split '\.', $ip;
+
+    if ($parts[3] == 0) {
+        # we ignore addresses ended with 0
+        if ($ip eq $end) {
+            return \@addresses;
+        } else {
+
+            $parts[3] = 1;
+            $ip = join '.', @parts;
         }
-    } while (++$ipRange);
+    }
+
+    while (1) {
+        push (@addresses, $ip);
+        if ($ip eq $end) {
+            last;
+        }
+
+        if ($parts[3] < 255) {
+            $parts[3] += 1;
+        } else {
+            $parts[3] = 1; # skip 0 for last component
+            if ($parts[2] < 255) {
+                $parts[2] += 1;
+            } else {
+                $parts[2] = 0;
+                if ($parts[1] < 255 ) {
+                    $parts[1]+= 1;
+                } else {
+                    $parts[1] = 0;
+                    if ($parts[0] < 255) {
+                        $parts[0] += 1;
+                    } else {
+                        # ip space finished
+                        last;
+                    }
+                }
+            }
+        }
+
+        $ip = join '.', @parts;
+    }
+
+    # my $ipRange = $self->_rangeObject();
+
+    # my @addresses;
+    # do {
+    #     my $ip = $ipRange->ip();
+    #     unless ($ip =~ /\.0$/) {
+    #         push (@addresses, $ip);
+    #     }
+    # } while (++$ipRange);
 
     return \@addresses;
 }

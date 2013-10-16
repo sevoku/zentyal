@@ -111,6 +111,8 @@ sub creationTest
 
 
         my $addresses = $range->addresses();
+        use Data::Dumper;
+        diag "ADDResses " . Dumper($addresses);
         is_deeply $addresses, $case->{expectedAddresses},
             'Checking addresses in the range';
         my ($addressInside) = @{ $case->{expectedAddresses} };
