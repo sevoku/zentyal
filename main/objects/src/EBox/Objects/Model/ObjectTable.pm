@@ -234,12 +234,5 @@ __(q{'Any' is a reserved word that could not be used as object name to avoid con
     }
 }
 
-sub deletedRowNotify
-{
-    my ($self, $oldRow) = @_;
-    my $id = $oldRow->id();
-    $self->parentModule()->clearMembersCache($id);
-}
-
 1;
 

@@ -37,8 +37,6 @@ sub _create
     my $self = $class->SUPER::_create(name => 'objects',
                                       printableName => __('Objects'),
                                       @_);
-
-    $self->{membersCache} = {};
     bless($self, $class);
 
     return $self;
@@ -113,24 +111,10 @@ sub objectMembers # (object)
         throw EBox::Exceptions::MissingArgument("id");
     }
 
-    if (not exists $self->{membersCache}->{$id}) {
-        my $object = $self->model('ObjectTable')->row($id);
-        return undef unless defined($object);
+    my $object = $self->model('ObjectTable')->row($id);
+    return undef unless defined($object);
 
-        my $members =  $object->subModel('members')->members();
-        $self->{membersCache}->{$id} = $members;
-    }
-
-    return $self->{membersCache}->{$id};
-}
-
-sub clearMembersCache
-{
-    my ($self, $id) = @_;
-    if (exists $self->{membersCache}->{$id}) {
-        EBox::debug("Cache remove $id");
-        delete $self->{membersCache}->{$id};
-    }
+    return  $object->subModel('members')->members();
 }
 
 # objectAddresses

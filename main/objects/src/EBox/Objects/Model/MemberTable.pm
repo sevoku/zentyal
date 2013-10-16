@@ -265,8 +265,8 @@ sub members
 sub addresses
 {
     my ($self, @params) = @_;
-    my $id = $self->parentRow()->id();
-    return $self->parentModule()->objectAddresses($id);
+    my $members = $self->members();
+    return $members->addresses(@params);
 }
 
 # Method: pageTitle
@@ -278,32 +278,6 @@ sub pageTitle
     my ($self) = @_;
 
     return $self->parentRow()->printableValueByName('name');
-}
-
-
-sub addedRowNotify
-{
-    my ($self) = @_;
-    $self->_invalidateCache();
-}
-
-sub deletedRowNotify
-{
-    my ($self) = @_;
-    $self->_invalidateCache();
-}
-
-sub updatedRowNotify
-{
-    my ($self) = @_;
-    $self->_invalidateCache();
-}
-
-sub _invalidateCache
-{
-    my ($self) = @_;
-    my $id = $self->parentRow()->id();
-    $self->parentModule()->clearMembersCache($id);
 }
 
 1;
