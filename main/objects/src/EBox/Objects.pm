@@ -38,6 +38,7 @@ sub _create
                                       printableName => __('Objects'),
                                       @_);
 
+    $self->{members} = {};
     bless($self, $class);
 
     return $self;
@@ -112,10 +113,16 @@ sub objectMembers # (object)
         throw EBox::Exceptions::MissingArgument("id");
     }
 
+    if (exists $self->{members}->{$id}) {
+        return $self->{members}->{$id};
+    }
+
     my $object = $self->model('ObjectTable')->row($id);
     return undef unless defined($object);
 
-    return $object->subModel('members')->members();
+    my $members =  $object->subModel('members')->members();
+    $self->{members}->{$id} = $members;
+    return $members;
 }
 
 # objectAddresses
