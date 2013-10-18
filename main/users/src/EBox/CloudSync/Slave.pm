@@ -33,7 +33,6 @@ sub new
     my $self = $class->SUPER::new(name => 'zentyal-cloud');
 
     $self->{usersMod} = EBox::Global->modInstance('users');
-    $self->{usersContainerDn} = $self->{usersMod}->userClass()->defaultContainer()->dn();
 
     bless($self, $class);
     return $self;
@@ -42,8 +41,6 @@ sub new
 sub _addUser
 {
     my ($self, $user, $pass) = @_;
-
-    return if ($user->baseDn() ne $self->{usersContainerDn});
 
     # refresh user info to avoid cache problems with passwords:
     $user = $self->{usersMod}->userByUID($user->name());
@@ -57,6 +54,7 @@ sub _addUser
         uid         => $user->get('uidNumber'),
         gid         => $user->get('gidNumber'),
         passwords   => \@passwords,
+        ou          => $self->get_ou($user),
     };
 
     my $uid = $user->get('uid');
@@ -69,8 +67,6 @@ sub _modifyUser
 {
     my ($self, $user, $pass) = @_;
 
-    return if ($user->baseDn() ne $self->{usersContainerDn});
-
     # refresh user info to avoid cache problems with passwords:
     $user = $self->{usersMod}->userByUID($user->name());
 
@@ -80,6 +76,7 @@ sub _modifyUser
         lastname   => $user->get('sn'),
         description => ($user->get('description') or ''),
         passwords  => \@passwords,
+        ou          => $self->get_ou($user),
     };
 
     my $uid = $user->get('uid');
@@ -92,8 +89,6 @@ sub _delUser
 {
     my ($self, $user) = @_;
 
-    return if ($user->baseDn() ne $self->{usersContainerDn});
-
     my $uid = $user->get('uid');
     $self->RESTClient->DELETE("/v1/users/users/$uid", retry => 1);
     return 0;
@@ -105,12 +100,11 @@ sub _addGroup
 
     return if (not $group->isSecurityGroup());
 
-    return unless ($self->_groupIsInUsersDefaultContainer($group));
-
     my $groupinfo = {
         name        => $group->name(),
         gid         => $group->get('gidNumber'),
         description => ($group->get('description') or ''),
+        ou          => $self->get_ou($group),
     };
 
     my $name = $group->name();
@@ -125,15 +119,14 @@ sub _modifyGroup
 
     return if (not $group->isSecurityGroup());
 
-    return unless ($self->_groupIsInUsersDefaultContainer($group));
-
     # FIXME: We should sync contacts too!
     my @members = map { $_->name() } @{$group->users()};
     my $groupinfo = {
         name        => $group->name(),
         gid         => $group->get('gidNumber'),
         description => ($group->get('description') or ''),
-        members  => \@members,
+        members     => \@members,
+        ou          => $self->get_ou($group),
     };
 
     my $name = $group->get('cn');
@@ -146,17 +139,19 @@ sub _delGroup
 {
     my ($self, $group) = @_;
 
-    return unless ($self->_groupIsInUsersDefaultContainer($group));
-
     my $name = $group->get('cn');
     $self->RESTClient->DELETE("/v1/users/groups/$name", retry => 1);
     return 0;
 }
 
-sub _groupIsInUsersDefaultContainer
+
+sub get_ou
 {
-    my ($self, $group) = @_;
-    return $group->parent()->dn() eq  $self->{usersContainerDn};
+    my ($self, $entry) = @_;
+    my $tail = ','.$self->{usersMod}->ldap->dn();
+    my $ou = $entry->baseDn();
+    $ou =~ s/$tail//;
+    return $ou;
 }
 
 sub RESTClient
