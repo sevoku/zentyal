@@ -45,6 +45,8 @@ sub _addUser
     # refresh user info to avoid cache problems with passwords:
     $user = $self->{usersMod}->userByUID($user->name());
 
+    return if ($user->isInternal());
+
     my @passwords = map { encode_base64($_) } @{$user->passwordHashes()};
     my $userinfo = {
         name        => $user->get('uid'),
@@ -70,6 +72,8 @@ sub _modifyUser
     # refresh user info to avoid cache problems with passwords:
     $user = $self->{usersMod}->userByUID($user->name());
 
+    return if ($user->isInternal());
+
     my @passwords = map { encode_base64($_) } @{$user->passwordHashes()};
     my $userinfo = {
         firstname  => $user->get('givenName'),
@@ -88,6 +92,8 @@ sub _modifyUser
 sub _delUser
 {
     my ($self, $user) = @_;
+
+    return if ($user->isInternal());
 
     my $uid = $user->get('uid');
     $self->RESTClient->DELETE("/v1/users/users/$uid", retry => 1);
@@ -138,6 +144,8 @@ sub _modifyGroup
 sub _delGroup
 {
     my ($self, $group) = @_;
+
+    return if (not $group->isSecurityGroup());
 
     my $name = $group->get('cn');
     $self->RESTClient->DELETE("/v1/users/groups/$name", retry => 1);
