@@ -1,3 +1,8 @@
+HEAD
+	+ Added resolvconf as dependency to avoid problems in installations
+	  without the ubuntu-minimal metapackage
+3.2.2
+	+ Fixed search domain regression after resolvconf changes
 3.2.1
 	+ Use new resolvconf framework to manage resolvers list
 	+ Fix setNameservers method in Network to avoid error in import
